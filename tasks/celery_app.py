@@ -84,6 +84,10 @@ celery_app.conf.update(
             'task': 'tasks.cleanup_tasks.cleanup_old_signals_periodic',
             'schedule': 86400.0,  # Раз в сутки удаляем старые закрытые сигналы (старше 30 дней)
         },
+        'cleanup-old-logs-periodic': {
+            'task': 'tasks.cleanup_tasks.cleanup_old_logs_periodic',
+            'schedule': 86400.0,  # Раз в сутки удаляем старые лог-файлы (старше 7 дней)
+        },
     },
 )
 

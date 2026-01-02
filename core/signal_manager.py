@@ -84,15 +84,9 @@ class SignalManager:
         return signal
     
     def _setup_logging(self):
-        """Настраивает логирование после создания директорий"""
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s',
-            handlers=[
-                logging.FileHandler('logs/analysis.log'),
-                logging.StreamHandler()
-            ]
-        )
+        """Настраивает логирование после создания директорий с ротацией"""
+        from core.logging_config import setup_analysis_logging
+        setup_analysis_logging()
         global logger
         logger = logging.getLogger(__name__)
     

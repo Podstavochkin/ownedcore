@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from tasks.celery_app import celery_app
 from core.analysis_engine import analysis_engine
+from core.logging_config import cleanup_old_logs
 import logging
 
 logger = logging.getLogger(__name__)
@@ -113,4 +114,28 @@ def cleanup_old_signals_periodic():
     except Exception as e:
         logger.error(f"❌ Критическая ошибка в cleanup_old_signals_periodic: {e}", exc_info=True)
         return {'status': 'error', 'message': str(e)}
+
+
+@celery_app.task(name='tasks.cleanup_tasks.cleanup_old_logs_periodic', queue='analysis')
+def cleanup_old_logs_periodic():
+    """
+    Периодическая задача для очистки старых лог-файлов.
+    Удаляет лог-файлы старше 7 дней.
+    """
+    try:
+        logger.info("🧹 Запуск периодической очистки старых лог-файлов...")
+        cleanup_old_logs(logs_dir='logs', days_to_keep=7)
+        logger.info("✅ Очистка лог-файлов завершена")
+        
+        return {
+            'status': 'success',
+            'message': 'Old log files cleaned up'
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка при очистке лог-файлов: {e}", exc_info=True)
+        return {
+            'status': 'error',
+            'message': str(e)
+        }
 

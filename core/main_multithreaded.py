@@ -25,16 +25,9 @@ from signal_manager import signal_manager, SignalManager
 # Создаем директорию для логов перед настройкой логирования
 os.makedirs("logs", exist_ok=True)
 
-# Настройка логирования
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('logs/server_multithreaded.log'),
-        logging.StreamHandler()
-    ]
-)
-
+# Настройка логирования с ротацией
+from core.logging_config import setup_server_logging
+setup_server_logging()
 logger = logging.getLogger(__name__)
 
 # Глобальные переменные для кэширования (потокобезопасные)
