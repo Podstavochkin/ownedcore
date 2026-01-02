@@ -1,0 +1,5 @@
+symbol,base,quote,type,active,spot,future,linear,inverse,contractSize,expiry,strike,optionType,settleType,status
+BTC/USDT:USDT-250926,BTC,USDT,future,True,False,True,True,False,1.0,1758873600000,,,,active
+BTC/USDT:USDT-251226,BTC,USDT,future,True,False,True,True,False,1.0,1766736000000,,,,active
+ETH/USDT:USDT-250926,ETH,USDT,future,True,False,True,True,False,1.0,1758873600000,,,,active
+ETH/USDT:USDT-251226,ETH,USDT,future,True,False,True,True,False,1.0,1766736000000,,,,active

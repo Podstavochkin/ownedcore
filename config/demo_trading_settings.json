@@ -1,0 +1,18 @@
+{
+  "auto_trading_enabled": true,
+  "order_size_usdt": 15,
+  "order_type": "market",
+  "take_profit_percent": 2.5,
+  "stop_loss_percent": 1.0,
+  "symbol_suffix": ":USDT",
+  "quantity_precision": 3,
+  "time_in_force": "GTC",
+  "leverage": 2,
+  "position_idx": null,
+  "api_base_url": null,
+  "demo_header_enabled": false,
+  "market_type": "contract",
+  "market_entry_threshold_pct": 0.15,
+  "order_cancel_deviation_pct": 1.5
+}
+

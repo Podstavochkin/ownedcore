@@ -1,0 +1,3008 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>OwnedCore - Анализ торговых стратегий</title>
+    <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" 
+            onerror="console.warn('Failed to load lightweight-charts from unpkg, trying jsdelivr...'); 
+                     this.src='https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js';"></script>
+    <style>
+        :root {
+            /* Основная цветовая схема - Dark Cyberpunk */
+            --bg-primary: #000000;
+            --bg-secondary: #0a0a0a;
+            --bg-tertiary: #111111;
+            --bg-card: rgba(0, 255, 65, 0.05);
+            --bg-modal: rgba(0, 0, 0, 0.98);
+            
+            /* Текст */
+            --text-primary: #00ff41;
+            --text-secondary: #00cc33;
+            --text-muted: #008822;
+            
+            /* Акцентные цвета - Cyberpunk Neon */
+            --accent-primary: #00ff41;
+            --accent-secondary: #ff006e;
+            --accent-success: #00ff41;
+            --accent-danger: #ff006e;
+            --accent-warning: #ffaa00;
+            --accent-info: #00d9ff;
+            
+            /* Градиенты - Cyberpunk */
+            --gradient-primary: linear-gradient(135deg, #00ff41 0%, #00cc33 50%, #ff006e 100%);
+            --gradient-success: linear-gradient(135deg, #00ff41 0%, #00cc33 100%);
+            --gradient-danger: linear-gradient(135deg, #ff006e 0%, #cc0055 100%);
+            --gradient-warning: linear-gradient(135deg, #ffaa00 0%, #ff8800 100%);
+            
+            /* Cyberpunk эффекты */
+            --glass-bg: rgba(0, 255, 65, 0.08);
+            --glass-border: rgba(0, 255, 65, 0.3);
+            --neon-glow: 0 0 10px rgba(0, 255, 65, 0.5), 0 0 20px rgba(0, 255, 65, 0.3), 0 0 30px rgba(0, 255, 65, 0.2);
+            --neon-glow-pink: 0 0 10px rgba(255, 0, 110, 0.5), 0 0 20px rgba(255, 0, 110, 0.3), 0 0 30px rgba(255, 0, 110, 0.2);
+            
+            /* Тени */
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04);
+            
+            /* Анимации */
+            --transition-fast: 0.15s ease-in-out;
+            --transition-normal: 0.3s ease-in-out;
+            --transition-slow: 0.5s ease-in-out;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Сканирующая линия */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ff41, transparent);
+            animation: scanLine 3s linear infinite;
+            z-index: 10000;
+            pointer-events: none;
+        }
+
+        @keyframes scanLine {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(100vh); opacity: 0; }
+        }
+
+        /* Цифровой шум на фоне */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 65, 0.03) 2px, rgba(0, 255, 65, 0.03) 4px),
+                repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0, 255, 65, 0.03) 2px, rgba(0, 255, 65, 0.03) 4px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Индикаторы загрузки */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 14, 26, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--bg-tertiary);
+            border-top: 3px solid var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: var(--text-primary);
+            margin-top: 1rem;
+            font-size: 0.875rem;
+        }
+
+        /* Индикаторы обновления для карточек */
+        .pair-card.updating {
+            position: relative;
+        }
+
+        .pair-card.updating::after {
+            content: '';
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            width: 12px;
+            height: 12px;
+            border: 2px solid var(--bg-tertiary);
+            border-top: 2px solid var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Плавные переходы для данных */
+        .pair-card {
+            transition: all 0.3s ease;
+        }
+
+        .pair-card.updating {
+            opacity: 0.8;
+        }
+
+        /* Индикатор обновления для кнопки */
+        .btn.updating {
+            position: relative;
+            pointer-events: none;
+        }
+
+        .btn.updating::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 0.75rem;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Анимации для карточек */
+        .pair-card {
+            animation: fadeInUp 0.3s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Скелетон для загрузки */
+        .skeleton {
+            background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .skeleton-text {
+            height: 1.5rem;
+            border-radius: 0.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .skeleton-value {
+            height: 2.5rem;
+            border-radius: 0.25rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Заголовок - Cyberpunk Style */
+        .header {
+            background: rgba(0, 0, 0, 0.9);
+            border-bottom: 2px solid var(--accent-primary);
+            padding: 1.5rem 2rem;
+            box-shadow: var(--neon-glow);
+            position: relative;
+            overflow: visible;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 65, 0.1), transparent);
+            animation: glitch 4s infinite;
+            z-index: 0;
+        }
+
+        @keyframes glitch {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-2px); }
+            50% { transform: translateX(2px); }
+            75% { transform: translateX(-1px); }
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: var(--accent-primary);
+            animation: scanHeader 2s infinite;
+            z-index: 1;
+            box-shadow: var(--neon-glow);
+        }
+
+        @keyframes scanHeader {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            position: relative;
+            animation: logoGlow 1.5s ease-in-out infinite alternate, glitchLogo 3s infinite;
+            filter: drop-shadow(var(--neon-glow));
+        }
+
+        @keyframes logoGlow {
+            0% { filter: drop-shadow(0 0 5px rgba(0, 255, 65, 0.5)); }
+            100% { filter: drop-shadow(0 0 20px rgba(0, 255, 65, 1)); }
+        }
+
+        @keyframes glitchLogo {
+            0%, 100% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+        }
+
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            text-shadow: var(--neon-glow);
+            letter-spacing: 2px;
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            animation: textGlitch 4s infinite;
+        }
+
+        @keyframes textGlitch {
+            0%, 100% { text-shadow: var(--neon-glow); }
+            25% { text-shadow: var(--neon-glow), 2px 0 0 rgba(255, 0, 110, 0.5); }
+            50% { text-shadow: var(--neon-glow), -2px 0 0 rgba(255, 0, 110, 0.5); }
+            75% { text-shadow: var(--neon-glow), 0 2px 0 rgba(255, 0, 110, 0.5); }
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            position: relative;
+            overflow: visible;
+        }
+
+        /* Навигационное меню */
+        .nav-menu {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex: 1;
+            justify-content: center;
+            position: relative;
+            overflow: visible;
+        }
+
+        .nav-item {
+            padding: 0.5rem 1rem;
+            text-decoration: none;
+            color: var(--text-primary);
+            border: 1px solid transparent;
+            transition: var(--transition-normal);
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            font-size: 0.875rem;
+            letter-spacing: 1px;
+        }
+
+        .nav-item:hover {
+            border-color: var(--accent-primary);
+            box-shadow: var(--neon-glow);
+            color: var(--accent-primary);
+        }
+
+        .nav-item.active {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+            box-shadow: var(--neon-glow);
+        }
+
+        /* Выпадающее меню дизайна */
+        .design-dropdown {
+            position: relative;
+            z-index: 10002;
+        }
+
+        .design-btn {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            color: var(--accent-primary);
+            border: 1px solid var(--accent-primary);
+            box-shadow: var(--neon-glow);
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            font-size: 0.875rem;
+            letter-spacing: 1px;
+            position: relative;
+        }
+
+        .design-btn::after {
+            content: ' ▼';
+            font-size: 0.7rem;
+        }
+
+        .design-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 0.5rem;
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid var(--accent-primary);
+            box-shadow: var(--neon-glow);
+            min-width: 200px;
+            display: none;
+            z-index: 10001;
+            overflow: visible;
+        }
+
+        /* Для космической темы используем fixed позиционирование */
+        body.theme-cosmic .design-menu {
+            position: fixed !important;
+            margin-top: 0;
+        }
+
+        .design-menu.active {
+            display: block;
+        }
+
+        .design-option {
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: var(--transition-normal);
+            border-bottom: 1px solid rgba(0, 255, 65, 0.2);
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+
+        .design-option:last-child {
+            border-bottom: none;
+        }
+
+        .design-option:hover {
+            background: rgba(0, 255, 65, 0.1);
+            color: var(--accent-primary);
+        }
+
+        .design-option.active {
+            background: rgba(0, 255, 65, 0.2);
+            color: var(--accent-primary);
+            box-shadow: inset 0 0 10px rgba(0, 255, 65, 0.3);
+        }
+
+        /* Кнопки */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition-normal);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .btn-primary {
+            background: transparent;
+            color: var(--accent-primary);
+            border: 2px solid var(--accent-primary);
+            box-shadow: var(--neon-glow);
+            position: relative;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 255, 65, 0.2);
+            transition: left 0.3s ease;
+            z-index: -1;
+        }
+
+        .btn-primary:hover::before {
+            left: 0;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--neon-glow), 0 0 30px rgba(0, 255, 65, 0.6);
+            color: #ffffff;
+            text-shadow: 0 0 10px var(--accent-primary);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--accent-secondary);
+            border: 2px solid var(--accent-secondary);
+            box-shadow: var(--neon-glow-pink);
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 0, 110, 0.1);
+            box-shadow: var(--neon-glow-pink), 0 0 30px rgba(255, 0, 110, 0.6);
+            transform: translateY(-2px);
+            color: #ffffff;
+            text-shadow: 0 0 10px var(--accent-secondary);
+        }
+
+        .live-toggle-btn {
+            padding: 0.5rem 1.25rem;
+            border: 2px solid var(--accent-warning);
+            background: transparent;
+            color: var(--accent-warning);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-family: 'Courier New', monospace;
+            box-shadow: 0 0 12px rgba(255, 170, 0, 0.4);
+            transition: var(--transition-normal);
+        }
+
+        .live-toggle-btn.live-on {
+            border-color: var(--accent-success);
+            color: var(--accent-success);
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.5);
+        }
+
+        .live-toggle-btn.live-off {
+            border-color: var(--accent-danger);
+            color: var(--accent-danger);
+            box-shadow: 0 0 15px rgba(255, 0, 110, 0.5);
+        }
+
+        .live-toggle-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-success {
+            background: var(--gradient-success);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--gradient-danger);
+            color: white;
+        }
+
+        /* Основной контент */
+        .main-content {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Статистика */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        /* Адаптивность для маленьких экранов */
+        @media (max-width: 1400px) {
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .stat-card {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 0;
+            padding: 1.5rem;
+            box-shadow: var(--neon-glow);
+            border: 2px solid var(--accent-primary);
+            transition: var(--transition-normal);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--accent-primary);
+            box-shadow: var(--neon-glow);
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3px;
+            height: 100%;
+            background: var(--accent-primary);
+            box-shadow: var(--neon-glow);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--neon-glow), 0 0 40px rgba(0, 255, 65, 0.4);
+            border-color: var(--accent-primary);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Фильтры и поиск */
+        .filters-section {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 0;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--neon-glow);
+            border: 2px solid var(--accent-primary);
+        }
+
+        .filters-row {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 300px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--bg-tertiary);
+            border-radius: 0.5rem;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            transition: var(--transition-normal);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--bg-tertiary);
+            border-radius: 0.5rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition-normal);
+            font-size: 0.875rem;
+        }
+
+        .filter-btn.active {
+            background: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+        }
+
+        /* Карточки пар */
+        .pairs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .pair-card {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 0;
+            padding: 1.5rem;
+            box-shadow: var(--neon-glow);
+            border: 2px solid var(--accent-primary);
+            transition: var(--transition-normal);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pair-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent-primary);
+            transform: scaleX(0);
+            transition: var(--transition-normal);
+            box-shadow: var(--neon-glow);
+        }
+
+        .pair-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 2px;
+            height: 100%;
+            background: var(--accent-primary);
+            transform: scaleY(0);
+            transition: var(--transition-normal);
+            box-shadow: var(--neon-glow);
+        }
+
+        .pair-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--neon-glow), 0 0 40px rgba(0, 255, 65, 0.4);
+            border-color: var(--accent-primary);
+        }
+
+        .pair-card:hover::before,
+        .pair-card:hover::after {
+            transform: scale(1);
+        }
+
+        .pair-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .pair-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .pair-price {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--accent-success);
+        }
+
+        .trend-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .trend-up-strong {
+            background: var(--gradient-success);
+            color: white;
+        }
+
+        .trend-up-weak {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            opacity: 0.8;
+        }
+
+        .trend-down-strong {
+            background: var(--gradient-danger);
+            color: white;
+        }
+
+        .trend-down-weak {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+            color: white;
+            opacity: 0.8;
+        }
+
+        .trend-sideways {
+            background: var(--gradient-warning);
+            color: white;
+        }
+
+        .pair-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .detail-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .detail-value {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .levels-section {
+            margin-top: 1rem;
+        }
+
+        .levels-title {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .level-item {
+            background: var(--bg-tertiary);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: var(--transition-normal);
+            border: 1px solid transparent;
+        }
+
+        .level-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .level-price {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .level-info {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        
+        .level-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .level-tags {
+            display: flex;
+            gap: 0.35rem;
+            flex-wrap: wrap;
+        }
+        
+        .badge {
+            padding: 0.15rem 0.5rem;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-secondary);
+        }
+        
+        .badge-support { color: #63b3ed; }
+        .badge-resistance { color: #fc8181; }
+        .badge-timeframe { color: #fbd38d; }
+        .badge-score { color: #b794f4; }
+        
+        .level-meta {
+            display: flex;
+            gap: 0.75rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            flex-wrap: wrap;
+        }
+        
+        .level-summary {
+            margin: 0.75rem 0;
+            display: flex;
+            gap: 0.35rem;
+            flex-wrap: wrap;
+        }
+
+        /* Модальное окно */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-modal);
+            backdrop-filter: blur(10px);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            margin: 2% auto;
+            padding: 0;
+            border-radius: 1rem;
+            width: 90%;
+            max-width: 1200px;
+            height: 90%;
+            box-shadow: var(--shadow-xl);
+            border: 1px solid var(--bg-tertiary);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            background: var(--gradient-primary);
+            padding: 1.5rem;
+            border-radius: 1rem 1rem 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .close {
+            color: white;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: var(--transition-normal);
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .close:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            height: calc(100% - 80px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 0.5rem;
+        }
+
+        #timeframe-selector {
+            padding: 0.5rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--bg-tertiary);
+            border-radius: 0.5rem;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        .level-info {
+            background: var(--bg-secondary);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border-left: 4px solid var(--accent-primary);
+        }
+
+        .chart-container {
+            flex: 1;
+            background: var(--bg-secondary);
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+
+        /* Анимации загрузки */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--bg-tertiary);
+            border-top: 4px solid var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 1rem;
+            }
+            
+            .pairs-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .filters-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .search-box {
+                min-width: auto;
+            }
+            
+            .modal-content {
+                width: 95%;
+                height: 95%;
+                margin: 2.5% auto;
+            }
+        }
+
+        .sort-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .text-green-500 {
+            color: #48bb78 !important;
+        }
+
+        .text-red-500 {
+            color: #f56565 !important;
+        }
+
+        .text-yellow-500 {
+            color: #ed8936 !important;
+        }
+
+        .text-muted {
+            color: var(--text-muted) !important;
+        }
+
+        /* Дополнительные стили для улучшения UX */
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* ============================================
+           СТИЛИ ТЕМ
+           ============================================ */
+
+        /* Классический стиль */
+        body.theme-classic {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body.theme-classic:root,
+        body.theme-classic {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #1a1f2e;
+            --bg-tertiary: #252a3a;
+            --bg-card: #1e2332;
+            --bg-modal: rgba(10, 14, 26, 0.95);
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --text-muted: #718096;
+            --accent-primary: #667eea;
+            --accent-secondary: #764ba2;
+            --accent-success: #48bb78;
+            --accent-danger: #f56565;
+            --accent-warning: #ed8936;
+            --accent-info: #4299e1;
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-success: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            --gradient-danger: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+            --gradient-warning: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+            --glass-bg: rgba(30, 35, 50, 0.6);
+            --glass-border: rgba(102, 126, 234, 0.3);
+            --neon-glow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            --neon-glow-pink: 0 4px 15px rgba(118, 75, 162, 0.3);
+        }
+
+        body.theme-classic::before,
+        body.theme-classic::after {
+            display: none;
+        }
+
+        body.theme-classic .header {
+            background: var(--gradient-primary);
+            border-bottom: none;
+            box-shadow: var(--shadow-lg);
+            overflow: visible;
+        }
+
+        body.theme-classic .header::before,
+        body.theme-classic .header::after {
+            display: none;
+        }
+
+        body.theme-classic .logo {
+            animation: none;
+            filter: none;
+        }
+
+        body.theme-classic .header h1 {
+            background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: none;
+            animation: none;
+        }
+
+        body.theme-classic .stat-card,
+        body.theme-classic .pair-card,
+        body.theme-classic .filters-section {
+            background: var(--bg-card);
+            border-radius: 1rem;
+            border: 1px solid var(--bg-tertiary);
+            box-shadow: var(--shadow-md);
+        }
+
+        body.theme-classic .stat-card::before,
+        body.theme-classic .stat-card::after,
+        body.theme-classic .pair-card::before,
+        body.theme-classic .pair-card::after {
+            display: none;
+        }
+
+        body.theme-classic .btn-primary,
+        body.theme-classic .btn-secondary,
+        body.theme-classic .design-btn,
+        body.theme-classic .nav-item {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-transform: none;
+            letter-spacing: normal;
+            border-radius: 0.5rem;
+        }
+
+        body.theme-classic .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+        }
+
+        body.theme-classic .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--accent-primary);
+        }
+
+        /* Космический стиль */
+        body.theme-cosmic {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body.theme-cosmic:root,
+        body.theme-cosmic {
+            --bg-primary: #0a0e27;
+            --bg-secondary: #14142e;
+            --bg-tertiary: #1a1a3e;
+            --bg-card: rgba(26, 26, 62, 0.6);
+            --bg-modal: rgba(10, 14, 39, 0.95);
+            --text-primary: #ffffff;
+            --text-secondary: #b8b8d4;
+            --text-muted: #6b6b8a;
+            --accent-primary: #6c5ce7;
+            --accent-secondary: #fdcb6e;
+            --accent-success: #00b894;
+            --accent-danger: #d63031;
+            --accent-warning: #fdcb6e;
+            --accent-info: #74b9ff;
+            --gradient-primary: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 50%, #fdcb6e 100%);
+            --gradient-success: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+            --gradient-danger: linear-gradient(135deg, #d63031 0%, #c0392b 100%);
+            --gradient-warning: linear-gradient(135deg, #fdcb6e 0%, #f39c12 100%);
+            --glass-bg: rgba(26, 26, 62, 0.4);
+            --glass-border: rgba(108, 92, 231, 0.3);
+            --neon-glow: 0 0 20px rgba(108, 92, 231, 0.4), 0 0 40px rgba(108, 92, 231, 0.2);
+            --neon-glow-pink: 0 0 20px rgba(253, 203, 110, 0.4), 0 0 40px rgba(253, 203, 110, 0.2);
+        }
+
+        body.theme-cosmic::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(2px 2px at 20% 30%, rgba(108, 92, 231, 0.3), transparent),
+                radial-gradient(2px 2px at 60% 70%, rgba(253, 203, 110, 0.2), transparent),
+                radial-gradient(1px 1px at 50% 50%, rgba(255, 255, 255, 0.1), transparent);
+            background-size: 200% 200%, 150% 150%, 100% 100%;
+            animation: starField 20s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes starField {
+            0% { background-position: 0% 0%, 0% 0%, 0% 0%; }
+            100% { background-position: 100% 100%, 50% 50%, 25% 25%; }
+        }
+
+        body.theme-cosmic::after {
+            display: none;
+        }
+
+        body.theme-cosmic .header {
+            background: rgba(10, 14, 39, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(108, 92, 231, 0.3);
+            box-shadow: 0 8px 32px rgba(108, 92, 231, 0.2);
+            overflow: visible;
+        }
+
+        body.theme-cosmic .header::before {
+            background: var(--gradient-primary);
+            opacity: 0.1;
+        }
+
+        body.theme-cosmic .header::after {
+            background: linear-gradient(90deg, transparent, rgba(108, 92, 231, 0.3), transparent);
+        }
+
+        body.theme-cosmic .logo {
+            animation: logoFloat 3s ease-in-out infinite;
+            filter: drop-shadow(0 0 15px rgba(108, 92, 231, 0.6));
+        }
+
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        body.theme-cosmic .header h1 {
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: none;
+            animation: none;
+        }
+
+        body.theme-cosmic .stat-card,
+        body.theme-cosmic .pair-card,
+        body.theme-cosmic .filters-section {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px rgba(108, 92, 231, 0.2);
+        }
+
+        body.theme-cosmic .stat-card::before {
+            background: var(--gradient-primary);
+            height: 4px;
+            border-radius: 1rem 1rem 0 0;
+        }
+
+        body.theme-cosmic .stat-card::after {
+            display: none;
+        }
+
+        body.theme-cosmic .pair-card::before {
+            background: var(--gradient-primary);
+            height: 3px;
+            border-radius: 1rem 1rem 0 0;
+        }
+
+        body.theme-cosmic .pair-card::after {
+            display: none;
+        }
+
+        body.theme-cosmic .btn-primary {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            color: var(--accent-primary);
+            border: 1px solid var(--glass-border);
+        }
+
+        body.theme-cosmic .btn-secondary {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            color: var(--accent-secondary);
+            border: 1px solid rgba(253, 203, 110, 0.3);
+        }
+
+        body.theme-cosmic .nav-item,
+        body.theme-cosmic .design-btn {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-transform: none;
+            letter-spacing: normal;
+        }
+
+        /* Специфичные стили для меню в космической теме */
+        body.theme-cosmic .header-content {
+            overflow: visible;
+            z-index: 10003;
+        }
+
+        body.theme-cosmic .header-controls {
+            overflow: visible;
+            z-index: 10003;
+        }
+
+        body.theme-cosmic .nav-menu {
+            overflow: visible;
+            z-index: 10003;
+        }
+
+        body.theme-cosmic .design-dropdown {
+            z-index: 10004;
+            overflow: visible;
+        }
+
+        body.theme-cosmic .design-menu {
+            z-index: 99999 !important;
+            overflow: visible !important;
+            position: fixed !important;
+        }
+
+        body.theme-cosmic .design-menu.active {
+            display: block !important;
+        }
+
+        /* Стили для меню, перемещенного в body для космической темы */
+        .cosmic-menu-portal {
+            position: fixed !important;
+            z-index: 99999 !important;
+            background: rgba(0, 0, 0, 0.95) !important;
+            border: 2px solid var(--accent-primary) !important;
+            box-shadow: var(--neon-glow) !important;
+            min-width: 200px !important;
+        }
+
+        /* Убеждаемся, что body и html не обрезают меню в космической теме */
+        body.theme-cosmic,
+        html.theme-cosmic {
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        body.theme-cosmic .main-content {
+            position: relative;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body class="theme-cyberpunk">
+    <!-- Индикатор загрузки -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div style="text-align: center;">
+            <div class="loading-spinner"></div>
+            <div class="loading-text" id="loading-text">Загрузка данных...</div>
+        </div>
+    </div>
+
+    <!-- Заголовок -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-container">
+                <div class="logo">
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#00ff41;stop-opacity:1" />
+                                <stop offset="50%" style="stop-color:#00cc33;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#ff006e;stop-opacity:1" />
+                            </linearGradient>
+                            <filter id="glow">
+                                <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        <!-- Цифровой/матричный символ -->
+                        <rect x="20" y="20" width="60" height="60" fill="none" stroke="url(#logoGradient)" stroke-width="3" filter="url(#glow)"/>
+                        <rect x="30" y="30" width="40" height="40" fill="none" stroke="url(#logoGradient)" stroke-width="2" filter="url(#glow)"/>
+                        <line x1="20" y1="50" x2="30" y2="50" stroke="url(#logoGradient)" stroke-width="2" filter="url(#glow)"/>
+                        <line x1="70" y1="50" x2="80" y2="50" stroke="url(#logoGradient)" stroke-width="2" filter="url(#glow)"/>
+                        <line x1="50" y1="20" x2="50" y2="30" stroke="url(#logoGradient)" stroke-width="2" filter="url(#glow)"/>
+                        <line x1="50" y1="70" x2="50" y2="80" stroke="url(#logoGradient)" stroke-width="2" filter="url(#glow)"/>
+                        <circle cx="50" cy="50" r="5" fill="url(#logoGradient)" filter="url(#glow)"/>
+                        <!-- Цифровые линии -->
+                        <path d="M25 25 L35 35 M65 25 L75 35 M25 75 L35 65 M65 75 L75 65" stroke="url(#logoGradient)" stroke-width="1.5" opacity="0.7" filter="url(#glow)"/>
+                    </svg>
+                </div>
+                <h1>OwnedCore</h1>
+            </div>
+            <div class="header-controls">
+                <nav class="nav-menu">
+                    <a href="/dashboard" class="nav-item" id="nav-dashboard">Дашборд</a>
+                    <a href="/charts" class="nav-item" id="nav-charts">Графики</a>
+                    <a href="/signals" class="nav-item" id="nav-signals">Сигналы</a>
+                    <a href="/potential-signals" class="nav-item" id="nav-potential">ES</a>
+                    <a href="/demo-trading" class="nav-item" id="nav-demo">Демо</a>
+                    <div class="design-dropdown">
+                        <button class="design-btn" onclick="toggleDesignMenu()">Дизайн</button>
+                        <div class="design-menu" id="design-menu">
+                            <div class="design-option" onclick="switchTheme('classic')" data-theme="classic">Классический</div>
+                            <div class="design-option active" onclick="switchTheme('cyberpunk')" data-theme="cyberpunk">Cyberpunk</div>
+                            <div class="design-option" onclick="switchTheme('cosmic')" data-theme="cosmic">Космический</div>
+                        </div>
+                    </div>
+                </nav>
+                <button id="live-trading-toggle" class="live-toggle-btn live-on" onclick="toggleLiveTrading(event)">
+                    LIVE: ВКЛ
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Основной контент -->
+    <main class="main-content">
+        <!-- Статистика -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="total-pairs">-</div>
+                <div class="stat-label">Всего пар</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="active-levels">-</div>
+                <div class="stat-label">Активных уровней</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="levels-near-price">-</div>
+                <div class="stat-label">Уровней на подходе (&lt;2%)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="total-signals">-</div>
+                <div class="stat-label">Всего сигналов</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="last-update">-</div>
+                <div class="stat-label">Последнее обновление</div>
+            </div>
+        </div>
+
+        <!-- Фильтры и поиск -->
+        <div class="filters-section">
+            <div class="filters-row">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-input" id="search-input" placeholder="Поиск по парам..." onkeyup="filterPairs()">
+                </div>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" onclick="filterByTrend('all')">Все</button>
+                    <button class="filter-btn" onclick="filterByTrend('UP')">Восходящие</button>
+                    <button class="filter-btn" onclick="filterByTrend('DOWN')">Нисходящие</button>
+                    <button class="filter-btn" onclick="filterByTrend('SIDEWAYS')">Боковые</button>
+                    <button class="filter-btn" onclick="filterByLevels('with_levels')">С уровнями</button>
+                </div>
+            </div>
+            <div class="filters-row" style="margin-top: 1rem;">
+                <div class="sort-buttons">
+                    <button class="filter-btn" onclick="sortBy('distance')">По расстоянию</button>
+                    <button class="filter-btn" onclick="sortBy('price_change')">По изменению цены</button>
+                    <button class="filter-btn" onclick="sortBy('volume')">По объему</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Сетка пар -->
+        <div class="pairs-grid" id="pairs-grid">
+            <div class="loading">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Модальное окно с графиком -->
+    <div id="chart-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">График пары</h2>
+                <span class="close" onclick="closeChartModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="chart-controls">
+                    <select id="timeframe-selector" onchange="changeTimeframe()">
+                        <option value="5m">5 минут</option>
+                        <option value="15m" selected>15 минут</option>
+                        <option value="1h">1 час</option>
+                        <option value="4h">4 часа</option>
+                    </select>
+                    <div class="level-info" id="level-info">
+                        <!-- Информация об уровне будет здесь -->
+                    </div>
+                </div>
+                <div id="chart-container" class="chart-container">
+                    <!-- График будет здесь -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Глобальные переменные
+        let currentChart = null;
+        let currentPair = null;
+        let currentLevel = null;
+        let chartResizeObserver = null;
+        let allPairsData = [];
+        let filteredPairsData = [];
+        let allLevelsData = {};
+        let allSignalsData = [];
+        let isLoading = false;
+        let lastUpdateTime = null;
+        let liveTradingEnabled = true;
+        const serverPort = window.location.port || '8000';
+        const baseUrl = `http://localhost:${serverPort}`;
+
+        function updateLiveTradingToggleButton() {
+            const btn = document.getElementById('live-trading-toggle');
+            if (!btn) return;
+            btn.classList.toggle('live-on', liveTradingEnabled);
+            btn.classList.toggle('live-off', !liveTradingEnabled);
+            btn.textContent = liveTradingEnabled ? 'LIVE: ВКЛ' : 'LIVE: ВЫКЛ';
+        }
+
+        async function fetchLiveTradingStatus() {
+            try {
+                const response = await fetch(`${baseUrl}/api/trading/live/status`);
+                const data = await response.json();
+                if (typeof data.enabled === 'boolean') {
+                    liveTradingEnabled = data.enabled;
+                    updateLiveTradingToggleButton();
+                }
+            } catch (error) {
+                console.warn('Не удалось получить статус live-торговли:', error);
+            }
+        }
+
+        async function toggleLiveTrading(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            try {
+                const response = await fetch(`${baseUrl}/api/trading/live/status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled: !liveTradingEnabled })
+                });
+                const data = await response.json();
+                if (typeof data.enabled === 'boolean') {
+                    liveTradingEnabled = data.enabled;
+                    updateLiveTradingToggleButton();
+                }
+            } catch (error) {
+                console.error('Не удалось переключить live-режим:', error);
+            }
+        }
+
+        // ============================================================================
+        // ФУНКЦИИ ФОРМАТИРОВАНИЯ ВРЕМЕНИ (МОСКОВСКОЕ ВРЕМЯ UTC+3)
+        // ============================================================================
+        
+        /**
+         * Форматирует дату и время в московском часовом поясе (UTC+3)
+         * @param {string|Date} dateString - ISO строка или Date объект
+         * @returns {string} - Отформатированная строка в формате "DD.MM.YYYY, HH:MM:SS"
+         */
+        function formatMoscowTime(dateString) {
+            if (!dateString) return 'N/A';
+            
+            try {
+                const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+                if (isNaN(date.getTime())) return 'N/A';
+                
+                // Используем Intl для корректного отображения в московском времени
+                return date.toLocaleString('ru-RU', {
+                    timeZone: 'Europe/Moscow',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
+            } catch (e) {
+                console.warn('Ошибка форматирования времени:', e);
+                return 'N/A';
+            }
+        }
+        
+        /**
+         * Форматирует только дату в московском часовом поясе
+         * @param {string|Date} dateString - ISO строка или Date объект
+         * @returns {string} - Отформатированная дата в формате "DD.MM.YYYY"
+         */
+        function formatMoscowDate(dateString) {
+            if (!dateString) return 'N/A';
+            
+            try {
+                const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+                if (isNaN(date.getTime())) return 'N/A';
+                
+                return date.toLocaleDateString('ru-RU', {
+                    timeZone: 'Europe/Moscow',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                });
+            } catch (e) {
+                console.warn('Ошибка форматирования даты:', e);
+                return 'N/A';
+            }
+        }
+        
+        /**
+         * Форматирует только время в московском часовом поясе
+         * @param {string|Date} dateString - ISO строка или Date объект
+         * @returns {string} - Отформатированное время в формате "HH:MM:SS"
+         */
+        function formatMoscowTimeOnly(dateString) {
+            if (!dateString) return 'N/A';
+            
+            try {
+                const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+                if (isNaN(date.getTime())) return 'N/A';
+                
+                return date.toLocaleTimeString('ru-RU', {
+                    timeZone: 'Europe/Moscow',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
+            } catch (e) {
+                console.warn('Ошибка форматирования времени:', e);
+                return 'N/A';
+            }
+        }
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchLiveTradingStatus();
+            // Сначала пытаемся загрузить из кэша
+            const cacheLoaded = loadFromCache();
+            
+            // Если кэш загружен успешно, обновляем данные в фоне без показа индикатора
+            if (cacheLoaded) {
+                fetchData(false); // false = не показывать индикатор загрузки
+            } else {
+                // Если кэша нет, показываем индикатор загрузки
+                fetchData(true);
+            }
+            
+            startAutoRefresh();
+            
+            // Проверяем загрузку библиотеки графиков
+            if (typeof LightweightCharts === 'undefined') {
+                console.warn('LightweightCharts library not loaded');
+                // Показываем предупреждение пользователю
+                setTimeout(() => {
+                    const warning = document.createElement('div');
+                    warning.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #f56565; color: white; padding: 1rem; border-radius: 0.5rem; z-index: 1000;';
+                    warning.textContent = 'Внимание: Библиотека графиков не загружена. Функция просмотра графиков недоступна.';
+                    document.body.appendChild(warning);
+                    setTimeout(() => warning.remove(), 5000);
+                }, 2000);
+            } else {
+                console.log('LightweightCharts library loaded successfully');
+            }
+        });
+
+        // Загрузка данных из кэша
+        function loadFromCache() {
+            try {
+                const cached = localStorage.getItem('dashboard_cache');
+                const cacheTime = localStorage.getItem('dashboard_cache_time');
+                
+                if (cached && cacheTime) {
+                    const data = JSON.parse(cached);
+                    const cacheAge = Date.now() - parseInt(cacheTime);
+                    
+                    // Используем кэш, если он не старше 10 минут (увеличено с 5)
+                    if (cacheAge < 10 * 60 * 1000) {
+                        console.log('Загружаем данные дашборда из кэша');
+                        allPairsData = data.pairs || [];
+                        allLevelsData = data.levels || {};
+                        allSignalsData = data.signals || [];
+                        filteredPairsData = [...allPairsData];
+                        lastUpdateTime = new Date(parseInt(cacheTime));
+                        
+                        updateStats(data.stats, { active_levels: data.levels });
+                        updatePairsGrid();
+                        return true;
+                    }
+                }
+            } catch (error) {
+                console.warn('Ошибка загрузки кэша дашборда:', error);
+            }
+            return false;
+        }
+
+        // Сохранение данных в кэш
+        function saveToCache(pairsData, levelsData, signalsData) {
+            try {
+                const cacheData = {
+                    pairs: allPairsData,
+                    levels: allLevelsData,
+                    signals: allSignalsData,
+                    stats: pairsData
+                };
+                localStorage.setItem('dashboard_cache', JSON.stringify(cacheData));
+                localStorage.setItem('dashboard_cache_time', Date.now().toString());
+                console.log('Данные дашборда сохранены в кэш');
+            } catch (error) {
+                console.warn('Ошибка сохранения кэша дашборда:', error);
+            }
+        }
+
+        // Показ индикатора загрузки
+        function showLoadingIndicator(text = 'Загрузка данных...') {
+            const overlay = document.getElementById('loading-overlay');
+            const loadingText = document.getElementById('loading-text');
+            loadingText.textContent = text;
+            overlay.classList.add('active');
+        }
+
+        // Скрытие индикатора загрузки
+        function hideLoadingIndicator() {
+            const overlay = document.getElementById('loading-overlay');
+            overlay.classList.remove('active');
+        }
+
+        // Показ индикатора обновления для кнопки
+        function showButtonUpdating() {
+            const btn = document.getElementById('refresh-btn');
+            if (btn) {
+                btn.classList.add('updating');
+                btn.disabled = true;
+            }
+        }
+
+        // Скрытие индикатора обновления для кнопки
+        function hideButtonUpdating() {
+            const btn = document.getElementById('refresh-btn');
+            if (btn) {
+                btn.classList.remove('updating');
+                btn.disabled = false;
+            }
+        }
+
+        // Показ индикатора обновления для карточек
+        function showCardUpdating(cardId) {
+            const card = document.getElementById(cardId);
+            if (card) {
+                card.classList.add('updating');
+            }
+        }
+
+        // Скрытие индикатора обновления для карточек
+        function hideCardUpdating(cardId) {
+            const card = document.getElementById(cardId);
+            if (card) {
+                card.classList.remove('updating');
+            }
+        }
+
+        // Загрузка данных
+        async function fetchData(showLoading = true) {
+            if (isLoading) {
+                console.log('Обновление уже идет, пропускаем');
+                return;
+            }
+            
+            isLoading = true;
+            
+            if (showLoading) {
+                showLoadingIndicator();
+                showButtonUpdating();
+            }
+            
+            try {
+                // Загружаем данные параллельно
+                const [pairsResponse, signalsResponse] = await Promise.all([
+                    fetch(`${baseUrl}/api/pairs-status`),
+                    fetch(`${baseUrl}/api/signals`)
+                ]);
+
+                const pairsData = await pairsResponse.json();
+                const signalsData = await signalsResponse.json();
+
+                console.log('DEBUG: pairsData:', pairsData);
+                console.log('DEBUG: active_levels keys:', Object.keys(pairsData.active_levels || {}));
+                console.log('DEBUG: ADA/USDT levels:', pairsData.active_levels?.['ADA/USDT']);
+
+                // API возвращает results объект, конвертируем в массив
+                const results = pairsData.results || {};
+                allPairsData = Object.values(results);
+                allLevelsData = pairsData.active_levels || {};  // Берем уровни из pairs-status
+                allSignalsData = signalsData.signals || [];
+
+                console.log('DEBUG: allLevelsData keys:', Object.keys(allLevelsData));
+                console.log('DEBUG: allLevelsData ADA/USDT:', allLevelsData['ADA/USDT']);
+                
+                // НОВАЯ ОТЛАДКА: проверяем уровни для каждой пары
+                console.log('DEBUG: Проверка уровней для всех пар:');
+                allPairsData.forEach(pair => {
+                    const pairLevels = allLevelsData[pair.pair] || [];
+                    console.log(`  ${pair.pair}: ${pairLevels.length} уровней`, pairLevels);
+                });
+                
+                // Отладочная информация для новых полей
+                console.log('DEBUG: BTC/USDT data:', allPairsData.find(p => p.pair === 'BTC/USDT'));
+                console.log('DEBUG: Sample pair with price_change:', allPairsData.find(p => p.price_change_24h !== undefined));
+                console.log('DEBUG: Sample pair with volume:', allPairsData.find(p => p.volume_24h !== undefined));
+                
+                // Подробная отладка для всех пар
+                console.log('DEBUG: Все пары с объемом:');
+                allPairsData.forEach(pair => {
+                    if (pair.volume_24h !== undefined && pair.volume_24h > 0) {
+                        console.log(`  ${pair.pair}: ${pair.volume_24h}M`);
+                    } else {
+                        console.log(`  ${pair.pair}: объем отсутствует или 0`);
+                    }
+                });
+
+                // Сортируем пары по расстоянию до ближайшего уровня
+                allPairsData.sort((a, b) => {
+                    const aLevels = getPairLevels(a.pair);
+                    const bLevels = getPairLevels(b.pair);
+                    
+                    const aDistance = getDistanceToLevel(a, aLevels);
+                    const bDistance = getDistanceToLevel(b, bLevels);
+                    
+                    // Если у одной пары нет уровней, она идет в конец
+                    if (aDistance === 'N/A' && bDistance === 'N/A') return 0;
+                    if (aDistance === 'N/A') return 1;
+                    if (bDistance === 'N/A') return -1;
+                    
+                    // Сортируем по возрастанию расстояния (ближайшие сверху)
+                    return parseFloat(aDistance) - parseFloat(bDistance);
+                });
+                
+                filteredPairsData = [...allPairsData];
+
+                updateStats(pairsData, pairsData);  // Передаем pairsData дважды, так как уровни теперь в нем
+                updatePairsGrid();
+                saveToCache(pairsData, pairsData, signalsData); // Сохраняем данные в кэш
+                lastUpdateTime = new Date();
+                
+            } catch (error) {
+                console.error('Ошибка загрузки данных:', error);
+                
+                // При ошибке пытаемся загрузить из кэша
+                if (!loadFromCache()) {
+                    document.getElementById('pairs-grid').innerHTML = 
+                        '<div style="padding: 2rem; text-align: center; color: #f56565;">Ошибка загрузки данных</div>';
+                }
+            } finally {
+                isLoading = false;
+                if (showLoading) {
+                    hideLoadingIndicator();
+                    hideButtonUpdating();
+                }
+            }
+        }
+
+        // Обновление статистики
+        function updateStats(pairsData, levelsData) {
+            document.getElementById('total-pairs').textContent = pairsData.pairs_analyzed || 0;
+            
+            // Подсчитываем общее количество уровней по всем парам
+            let totalLevels = 0;
+            let levelsNearPrice = 0; // Уровни в пределах 2% от цены
+            const MAX_DISTANCE_PCT = 2.0; // Максимальное расстояние для "на подходе"
+            
+            const activeLevels = levelsData.active_levels || levelsData || {};
+            for (const pair in activeLevels) {
+                if (Array.isArray(activeLevels[pair])) {
+                    totalLevels += activeLevels[pair].length;
+                    
+                    // Находим текущую цену для этой пары
+                    const pairData = allPairsData.find(p => p.pair === pair);
+                    if (pairData && pairData.current_price) {
+                        const currentPrice = pairData.current_price;
+                        
+                        // Считаем уровни в пределах 2% от цены
+                        activeLevels[pair].forEach(level => {
+                            if (level.price) {
+                                const distancePct = Math.abs((currentPrice - level.price) / level.price) * 100.0;
+                                if (distancePct <= MAX_DISTANCE_PCT) {
+                                    levelsNearPrice++;
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+            
+            document.getElementById('active-levels').textContent = totalLevels;
+            document.getElementById('levels-near-price').textContent = levelsNearPrice;
+            document.getElementById('total-signals').textContent = allSignalsData.length || 0;
+            document.getElementById('last-update').textContent = lastUpdateTime ? formatMoscowTime(lastUpdateTime) : 'Нет данных';
+        }
+
+        // Обновление сетки пар
+        function updatePairsGrid() {
+            const grid = document.getElementById('pairs-grid');
+            
+            if (filteredPairsData.length === 0) {
+                grid.innerHTML = '<div style="color: #a0aec0; padding: 2rem; text-align: center;">Нет данных для отображения</div>';
+                return;
+            }
+
+            grid.innerHTML = filteredPairsData.map(pair => createPairCard(pair)).join('');
+        }
+
+        // Создание карточки пары
+        function createPairCard(pair) {
+            const trendClass = getTrendClass(pair.trend_1h);
+            const trendText = getTrendText(pair.trend_1h);
+            
+            // Получаем уровни для этой пары из глобальных данных
+            const pairLevels = getPairLevels(pair.pair);
+            const levelsHtml = createLevelsHtml(pairLevels);
+
+            // Получаем расстояние до ближайшего уровня
+            const distance = getDistanceToLevel(pair, pairLevels);
+            const distanceClass = distance === 'N/A' ? 'text-muted' : 
+                                parseFloat(distance) < 1 ? 'text-green-500' : 
+                                parseFloat(distance) < 3 ? 'text-yellow-500' : 'text-red-500';
+
+            // Безопасное получение значений с проверками
+            const currentPrice = pair.current_price || 0;
+            const priceChange = pair.price_change_24h || 0;
+            const volume = pair.volume_24h || 0;
+            const status = pair.status || 'unknown';
+
+            // Безопасно достаем первый уровень (если есть) и маппим поля из БД
+            const firstLevel = (pairLevels && pairLevels.length > 0) ? pairLevels[0] : null;
+            const firstLevelType = firstLevel ? (firstLevel.level_type || firstLevel.type || 'support') : 'support';
+            const firstLevelTsIso = firstLevel ? (firstLevel.first_touch || firstLevel.last_touch || firstLevel.created_at) : null;
+            const firstLevelTs = firstLevelTsIso ? Date.parse(firstLevelTsIso) : Date.now();
+            const firstLevelTimeframe = (firstLevel?.timeframe || firstLevel?.metadata?.timeframe || '15m').toUpperCase();
+            const firstLevelHist = firstLevel ? (firstLevel.historical_touches ??
+                firstLevel.metadata?.historical_touches ??
+                firstLevel.test_count ?? 0) : 0;
+            const firstLevelLive = firstLevel ? (firstLevel.live_test_count ??
+                firstLevel.metadata?.live_test_count ?? 0) : 0;
+            const firstLevelScore = firstLevel ? (firstLevel.score ??
+                firstLevel.metadata?.score ?? null) : null;
+            const totalTests = firstLevelHist + firstLevelLive;
+            const scoreDisplay = firstLevelScore !== null && firstLevelScore !== undefined
+                ? Number(firstLevelScore).toFixed(1)
+                : '—';
+
+            const scoreArg = firstLevelScore !== null && firstLevelScore !== undefined ? Number(firstLevelScore).toFixed(1) : 'null';
+            return `
+                <div class="pair-card slide-up" onclick="openChartModal('${pair.pair}', ${firstLevel?.price || 0}, '${firstLevelType}', ${firstLevelTs}, ${totalTests}, '${firstLevelTimeframe}', ${firstLevelHist}, ${firstLevelLive}, ${scoreArg})">
+                    <div class="pair-header">
+                        <div class="pair-name">${pair.pair}</div>
+                        <div class="pair-price">$${currentPrice.toFixed(4)}</div>
+                    </div>
+                    
+                    <div class="trend-indicator ${trendClass}">
+                        ${getTrendIcon(pair.trend_1h)} ${trendText}
+                    </div>
+                    
+                    ${firstLevel ? `
+                    <div class="level-summary">
+                        <span class="badge badge-${firstLevelType}">${firstLevelType.toUpperCase()}</span>
+                        <span class="badge badge-timeframe">${firstLevelTimeframe}</span>
+                        <span class="badge badge-score">Score ${scoreDisplay}</span>
+                        <span class="badge">Hist ${firstLevelHist}</span>
+                        <span class="badge">Live ${firstLevelLive}</span>
+                    </div>` : ''}
+                    
+                    <div class="pair-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Изменение 24ч</div>
+                            <div class="detail-value ${priceChange >= 0 ? 'text-green-500' : 'text-red-500'}">
+                                ${priceChange >= 0 ? '+' : ''}${priceChange.toFixed(2)}%
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Объем 24ч</div>
+                            <div class="detail-value">$${volume.toFixed(1)}M</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Уровней</div>
+                            <div class="detail-value">${pairLevels?.length || 0}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Сигналов</div>
+                            <div class="detail-value">${getPairSignals(pair.pair)?.length || 0}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Расстояние</div>
+                            <div class="detail-value ${distanceClass}">${distance}%</div>
+                        </div>
+                    </div>
+                    
+                    ${levelsHtml}
+                </div>
+            `;
+        }
+
+        // Создание HTML для уровней
+        function createLevelsHtml(levels) {
+            if (!levels || levels.length === 0) {
+                return '<div class="levels-section"><div class="levels-title">📊 Нет активных уровней</div></div>';
+            }
+
+            const levelsHtml = levels.map(level => {
+                const meta = level.metadata || {};
+                const price = Number(level.price || 0);
+                const type = level.level_type || level.type || 'unknown';
+                const tsIso = level.first_touch || level.last_touch || level.created_at;
+                const dateStr = tsIso ? formatMoscowTime(tsIso) : formatMoscowTime(new Date());
+                const timeframe = (level.timeframe || meta.timeframe || '15m').toUpperCase();
+                const historicalTouches = level.historical_touches ?? meta.historical_touches ?? level.test_count ?? 0;
+                const liveTouches = level.live_test_count ?? meta.live_test_count ?? 0;
+                const totalTests = historicalTouches + liveTouches;
+                const score = level.score ?? meta.score;
+                const scoreDisplay = score !== undefined && score !== null ? Number(score).toFixed(1) : '—';
+                const distance = level.distance_percent ?? meta.distance_percent;
+                const distanceDisplay = distance !== undefined && distance !== null ? `${Number(distance).toFixed(2)}%` : '—';
+                const scoreArg = score !== undefined && score !== null ? Number(score).toFixed(1) : 'null';
+                const tsArg = tsIso ? `'${tsIso}'` : 'null';
+                
+                return `
+                    <div class="level-item" onclick="event.stopPropagation(); openChartModal('${level.pair || ''}', ${price}, '${type}', ${tsArg}, ${totalTests}, '${timeframe}', ${historicalTouches}, ${liveTouches}, ${scoreArg})">
+                        <div class="level-header">
+                            <div>
+                                <div class="level-price">$${price.toFixed(4)}</div>
+                                <div class="level-info">${dateStr}</div>
+                            </div>
+                            <div class="level-tags">
+                                <span class="badge badge-${type}">${type.toUpperCase()}</span>
+                                <span class="badge badge-timeframe">${timeframe}</span>
+                                <span class="badge badge-score">Score ${scoreDisplay}</span>
+                            </div>
+                        </div>
+                        <div class="level-meta">
+                            <span>Hist: ${historicalTouches}</span>
+                            <span>Live: ${liveTouches}</span>
+                            <span>Dist: ${distanceDisplay}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="levels-section">
+                    <div class="levels-title">🎯 Активные уровни</div>
+                    ${levelsHtml}
+                </div>
+            `;
+        }
+
+        // Получение класса тренда
+        function getTrendClass(trend) {
+            if (!trend) return 'trend-sideways';
+            if (trend.includes('UP_STRONG')) return 'trend-up-strong';
+            if (trend.includes('UP_WEAK')) return 'trend-up-weak';
+            if (trend.includes('DOWN_STRONG')) return 'trend-down-strong';
+            if (trend.includes('DOWN_WEAK')) return 'trend-down-weak';
+            return 'trend-sideways';
+        }
+
+        // Получение текста тренда
+        function getTrendText(trend) {
+            if (!trend) return 'Боковой';
+            
+            const parts = trend.split('_');
+            const direction = parts[0];
+            const strength = parts[1];
+            
+            let directionText = '';
+            let strengthText = '';
+            
+            if (direction === 'UP') directionText = 'Восходящий';
+            else if (direction === 'DOWN') directionText = 'Нисходящий';
+            else directionText = 'Боковой';
+            
+            if (strength === 'STRONG') strengthText = 'СИЛЬНЫЙ';
+            else if (strength === 'WEAK') strengthText = 'СЛАБЫЙ';
+            else strengthText = 'СРЕДНИЙ';
+            
+            return `${directionText}, ${strengthText}`;
+        }
+
+        // Получение иконки тренда
+        function getTrendIcon(trend) {
+            if (!trend) return '➡️';
+            if (trend.includes('UP')) return '📈';
+            if (trend.includes('DOWN')) return '📉';
+            return '➡️';
+        }
+
+        // Получение уровней для конкретной пары
+        function getPairLevels(pairName) {
+            const levels = (allLevelsData[pairName] || []).map(level => {
+                const meta = level.metadata || {};
+                return {
+                    ...level,
+                    score: level.score ?? meta.score ?? null
+                };
+            });
+            levels.sort((a, b) => ((b.score ?? 0) - (a.score ?? 0)));
+            return levels;
+        }
+
+        // Получение сигналов для конкретной пары
+        function getPairSignals(pairName) {
+            return allSignalsData.filter(signal => signal.pair === pairName);
+        }
+
+        // Получение расстояния до уровня
+        function getDistanceToLevel(pair, levels) {
+            if (!levels || levels.length === 0 || !pair.current_price) return 'N/A';
+            let closest = null;
+            let minDistance = Infinity;
+            levels.forEach(level => {
+                if (!level.price) return;
+                const dist = Math.abs((pair.current_price - level.price) / level.price * 100);
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    closest = level;
+                }
+            });
+            return closest ? minDistance.toFixed(2) : 'N/A';
+        }
+
+        // Фильтрация пар
+        function filterPairs() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            filteredPairsData = allPairsData.filter(pair => 
+                pair.pair.toLowerCase().includes(searchTerm)
+            );
+            updatePairsGrid();
+        }
+
+        // Фильтрация по тренду
+        function filterByTrend(trend) {
+            // Обновляем активную кнопку
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (trend === 'all') {
+                filteredPairsData = [...allPairsData];
+            } else {
+                filteredPairsData = allPairsData.filter(pair => 
+                    pair.trend_1h && pair.trend_1h.includes(trend)
+                );
+            }
+            updatePairsGrid();
+        }
+
+        // Фильтрация по наличию уровней
+        function filterByLevels(type) {
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (type === 'with_levels') {
+                filteredPairsData = allPairsData.filter(pair => getPairLevels(pair.pair).length > 0);
+            }
+            updatePairsGrid();
+        }
+
+        // Сортировка пар
+        function sortBy(sortBy) {
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            let sortedData = [...filteredPairsData];
+
+            if (sortBy === 'distance') {
+                sortedData.sort((a, b) => {
+                    const aDistance = getDistanceToLevel(a, getPairLevels(a.pair));
+                    const bDistance = getDistanceToLevel(b, getPairLevels(b.pair));
+                    if (aDistance === 'N/A' && bDistance === 'N/A') return 0;
+                    if (aDistance === 'N/A') return 1;
+                    if (bDistance === 'N/A') return -1;
+                    return parseFloat(aDistance) - parseFloat(bDistance);
+                });
+            } else if (sortBy === 'price_change') {
+                sortedData.sort((a, b) => Math.abs(parseFloat(b.price_change_24h || 0)) - Math.abs(parseFloat(a.price_change_24h || 0)));
+            } else if (sortBy === 'volume') {
+                sortedData.sort((a, b) => parseFloat(b.volume_24h || 0) - parseFloat(a.volume_24h || 0));
+            }
+
+            filteredPairsData = sortedData;
+            updatePairsGrid();
+        }
+
+        // Открытие модального окна с графиком
+        async function openChartModal(
+            pair,
+            levelPrice,
+            levelType,
+            levelTimestamp,
+            totalTests = 0,
+            timeframe = '15m',
+            historicalTouches = 0,
+            liveTouches = 0,
+            levelScore = null
+        ) {
+            if (levelScore === 'null') {
+                levelScore = null;
+            } else if (typeof levelScore === 'string') {
+                const parsed = Number(levelScore);
+                levelScore = isNaN(parsed) ? null : parsed;
+            }
+            // Проверяем, загружена ли библиотека графиков
+            if (typeof LightweightCharts === 'undefined') {
+                alert('Ошибка: Библиотека графиков не загружена. Пожалуйста, обновите страницу.');
+                return;
+            }
+
+            currentPair = pair;
+            currentLevel = {
+                price: levelPrice,
+                type: levelType,
+                timestamp: levelTimestamp,
+                test_count: totalTests,
+                timeframe,
+                historical_touches: historicalTouches,
+                live_test_count: liveTouches,
+                score: levelScore
+            };
+
+            // Обновляем заголовок модального окна
+            document.getElementById('modal-title').textContent = `${pair} - Уровень ${levelType}`;
+
+            // Обновляем информацию об уровне
+            const levelInfo = document.getElementById('level-info');
+            const levelDate = formatMoscowTime(levelTimestamp);
+            levelInfo.innerHTML = `
+                <div>
+                    <strong>Уровень:</strong> $${levelPrice.toFixed(4)} (${levelType.toUpperCase()})<br>
+                    <strong>ТФ уровня:</strong> ${timeframe}<br>
+                    <strong>Создан:</strong> ${levelDate}<br>
+                    <strong>Касания:</strong> Hist ${historicalTouches} • Live ${liveTouches}<br>
+                    <strong>Score:</strong> ${levelScore !== null && levelScore !== undefined ? Number(levelScore).toFixed(1) : '—'}
+                </div>
+            `;
+
+            // Очищаем контейнер графика
+            document.getElementById('chart-container').innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #a0aec0;">
+                    <div style="text-align: center;">
+                        <div class="spinner"></div>
+                        <p style="margin-top: 1rem;">Загрузка данных...</p>
+                    </div>
+                </div>
+            `;
+
+            // Показываем модальное окно
+            document.getElementById('chart-modal').style.display = 'flex';
+            
+            // Загружаем данные и создаем график с retry
+            await loadChartDataWithRetry(pair, document.getElementById('timeframe-selector').value, 3);
+        }
+
+        // Закрытие модального окна
+        function closeChartModal() {
+            document.getElementById('chart-modal').style.display = 'none';
+            
+            // Отключаем ResizeObserver
+            if (chartResizeObserver) {
+                chartResizeObserver.disconnect();
+                chartResizeObserver = null;
+            }
+            
+            // Удаляем график
+            if (currentChart) {
+                try {
+                    currentChart.remove();
+                } catch (e) {
+                    console.warn('Ошибка при удалении графика:', e);
+                }
+                currentChart = null;
+            }
+        }
+
+        // Загрузка данных для графика с retry логикой
+        async function loadChartDataWithRetry(pair, timeframe, maxRetries = 3) {
+            let lastError = null;
+            
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    const candles = await loadChartData(pair, timeframe);
+                    if (candles && candles.length > 0) {
+                        createChart(candles, timeframe);
+                        return;
+                    } else {
+                        throw new Error('Получен пустой массив данных');
+                    }
+                } catch (error) {
+                    lastError = error;
+                    console.warn(`Попытка ${attempt}/${maxRetries} не удалась:`, error.message);
+                    
+                    if (attempt < maxRetries) {
+                        // Экспоненциальная задержка: 1s, 2s, 4s
+                        const delay = Math.pow(2, attempt - 1) * 1000;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        
+                        // Показываем сообщение о повторе
+                        const container = document.getElementById('chart-container');
+                        container.innerHTML = `
+                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #a0aec0; padding: 2rem;">
+                                <div class="spinner"></div>
+                                <p style="margin-top: 1rem;">Повторная попытка загрузки (${attempt}/${maxRetries})...</p>
+                                <p style="margin-top: 0.5rem; font-size: 0.9em; color: #718096;">${error.message}</p>
+                            </div>
+                        `;
+                    }
+                }
+            }
+            
+            // Все попытки исчерпаны - показываем ошибку с кнопкой повтора
+            showChartError(lastError, pair, timeframe);
+        }
+
+        // Загрузка данных для графика
+        async function loadChartData(pair, timeframe) {
+            const timeout = 10000; // 10 секунд
+            
+            // Создаем AbortController для таймаута
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+            
+            try {
+                const response = await fetch(`${baseUrl}/api/chart-data?pair=${encodeURIComponent(pair)}&timeframe=${timeframe}`, {
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    return data.candles;
+                } else {
+                    // Более информативное сообщение об ошибке
+                    let errorMessage = data.error || 'Ошибка загрузки данных';
+                    if (data.cached) {
+                        errorMessage += ' (используются кэшированные данные)';
+                    }
+                    throw new Error(errorMessage);
+                }
+            } catch (error) {
+                clearTimeout(timeoutId);
+                
+                if (error.name === 'AbortError') {
+                    throw new Error('Превышено время ожидания ответа от сервера (10 секунд)');
+                } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    throw new Error('Не удалось подключиться к серверу. Проверьте, что API Gateway запущен.');
+                }
+                console.error('Ошибка загрузки данных графика:', error);
+                throw error;
+            }
+        }
+
+        // Показ ошибки с кнопкой повтора
+        function showChartError(error, pair, timeframe) {
+            const container = document.getElementById('chart-container');
+            const errorMessage = error.message || 'Неизвестная ошибка';
+            const isRateLimit = errorMessage.includes('лимит') || errorMessage.includes('banned') || errorMessage.includes('requests');
+            
+            container.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 2rem; text-align: center;">
+                    <div style="color: #f56565; font-size: 1.5rem; margin-bottom: 1rem;">⚠️</div>
+                    <h3 style="color: #f56565; margin-bottom: 1rem;">Ошибка загрузки данных</h3>
+                    <p style="color: #a0aec0; margin-bottom: 1.5rem; max-width: 500px;">
+                        ${errorMessage}
+                    </p>
+                    ${isRateLimit ? `
+                        <p style="color: #718096; font-size: 0.9em; margin-bottom: 1.5rem;">
+                            Превышен лимит запросов к Binance API. Попробуйте позже или используйте кэшированные данные.
+                        </p>
+                    ` : ''}
+                    <button onclick="loadChartDataWithRetry('${pair}', '${timeframe}', 3)" 
+                            style="background: #4299e1; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; font-size: 1rem;">
+                        🔄 Повторить попытку
+                    </button>
+                </div>
+            `;
+        }
+
+        // Создание графика
+        function createChart(candles, timeframe) {
+            const container = document.getElementById('chart-container');
+            container.innerHTML = '';
+
+            if (!candles || candles.length === 0) {
+                container.innerHTML = '<div style="color: #a0aec0; padding: 2rem; text-align: center;">Нет данных для отображения</div>';
+                return;
+            }
+
+            // Проверяем, загружена ли библиотека
+            if (typeof LightweightCharts === 'undefined') {
+                container.innerHTML = '<div style="color: #f56565; padding: 2rem; text-align: center;">Ошибка: Библиотека графиков не загружена</div>';
+                return;
+            }
+
+            try {
+                // Создаем график
+                currentChart = LightweightCharts.createChart(container, {
+                    width: container.clientWidth,
+                    height: container.clientHeight,
+                    layout: {
+                        background: { color: '#1a202c' },
+                        textColor: '#e2e8f0',
+                    },
+                    grid: {
+                        vertLines: { color: '#2d3748' },
+                        horzLines: { color: '#2d3748' },
+                    },
+                    crosshair: {
+                        mode: LightweightCharts.CrosshairMode.Normal,
+                    },
+                    rightPriceScale: {
+                        borderColor: '#2d3748',
+                    },
+                    timeScale: {
+                        borderColor: '#2d3748',
+                        timeVisible: true,
+                        secondsVisible: false,
+                        // Настройка форматирования времени для московского часового пояса (компактный формат)
+                        tickMarkFormatter: (time, tickMarkType, locale) => {
+                            const date = new Date(time * 1000);
+                            
+                            // Используем Intl для корректной конвертации в московское время
+                            const formatter = new Intl.DateTimeFormat('ru-RU', {
+                                timeZone: 'Europe/Moscow',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: false
+                            });
+                            
+                            const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
+                                timeZone: 'Europe/Moscow',
+                                month: '2-digit',
+                                day: '2-digit'
+                            });
+                            
+                            // Адаптивный формат в зависимости от типа метки
+                            // 0 = день, 1 = месяц, 2 = год, 3 = час, 4 = минута
+                            if (tickMarkType === 0) {
+                                // Для дней: DD.MM HH:MM (компактно)
+                                return dateFormatter.format(date) + ' ' + formatter.format(date);
+                            } else if (tickMarkType === 1) {
+                                // Для месяцев: DD.MM (только дата)
+                                return dateFormatter.format(date);
+                            } else {
+                                // Для часов/минут: HH:MM (только время)
+                                return formatter.format(date);
+                            }
+                        },
+                    },
+                });
+
+                // Проверяем, что график создан
+                if (!currentChart) {
+                    throw new Error('Не удалось создать график');
+                }
+
+                // Добавляем свечи
+                const candlestickSeries = currentChart.addCandlestickSeries({
+                    upColor: '#48bb78',
+                    downColor: '#f56565',
+                    borderDownColor: '#f56565',
+                    borderUpColor: '#48bb78',
+                    wickDownColor: '#f56565',
+                    wickUpColor: '#48bb78',
+                });
+
+                // Конвертируем данные для Lightweight Charts
+                const chartData = candles.map(candle => ({
+                    time: Math.floor(candle.timestamp / 1000),
+                    open: candle.open,
+                    high: candle.high,
+                    low: candle.low,
+                    close: candle.close,
+                }));
+
+                candlestickSeries.setData(chartData);
+
+                // Добавляем уровень двумя сериями:
+                // 1) пунктир по всей истории (контекст)
+                // 2) сплошная линия c момента фиксации уровня
+                const levelColor = currentLevel.type === 'support' ? '#48bb78' : '#f56565';
+                const dashedSeries = currentChart.addLineSeries({
+                    color: levelColor + 'AA',
+                    lineWidth: 1,
+                    lineStyle: LightweightCharts.LineStyle.Dashed,
+                });
+                const solidSeries = currentChart.addLineSeries({
+                    color: levelColor,
+                    lineWidth: 2,
+                    lineStyle: LightweightCharts.LineStyle.Solid,
+                });
+
+                const levelTime = Math.floor(currentLevel.timestamp / 1000);
+                const chartStart = chartData[0]?.time || levelTime;
+                const nowTime = Math.floor(Date.now() / 1000);
+
+                // Находим экстремум: свечу, где уровень родился (макс для resistance, мин для support)
+                let extremumTime = levelTime;
+                let bestDiff = Number.POSITIVE_INFINITY;
+                for (const c of chartData) {
+                    const ref = currentLevel.type === 'support' ? c.low : c.high;
+                    const d = Math.abs(ref - currentLevel.price);
+                    if (d < bestDiff) {
+                        bestDiff = d;
+                        extremumTime = c.time;
+                    }
+                }
+
+                // Пунктир — контекст по всей истории
+                dashedSeries.setData([
+                    { time: chartStart, value: currentLevel.price },
+                    { time: nowTime, value: currentLevel.price }
+                ]);
+                // Сплошная — строго от точки экстремума до текущего времени
+                solidSeries.setData([
+                    { time: extremumTime, value: currentLevel.price },
+                    { time: nowTime, value: currentLevel.price }
+                ]);
+
+                // Добавляем маркер в точке создания уровня
+                const markerSeries = currentChart.addCandlestickSeries();
+                markerSeries.setMarkers([
+                    {
+                        time: levelTime,
+                        position: currentLevel.type === 'support' ? 'belowBar' : 'aboveBar',
+                        color: levelColor,
+                        shape: 'arrowUp',
+                        text: `${currentLevel.type.toUpperCase()} $${currentLevel.price.toFixed(4)}`,
+                    }
+                ]);
+
+                // Устанавливаем видимый диапазон
+                const lastCandle = chartData[chartData.length - 1];
+                const firstCandle = chartData[0];
+                currentChart.timeScale().setVisibleRange({
+                    from: firstCandle.time,
+                    to: lastCandle.time,
+                });
+
+                // Обработка изменения размера с проверкой существования графика
+                chartResizeObserver = new ResizeObserver(entries => {
+                    if (entries.length === 0 || entries[0].target !== container) return;
+                    if (!currentChart) {
+                        // График был удален, отключаем observer
+                        chartResizeObserver.disconnect();
+                        chartResizeObserver = null;
+                        return;
+                    }
+                    try {
+                        const newRect = entries[0].contentRect;
+                        currentChart.applyOptions({ width: newRect.width, height: newRect.height });
+                    } catch (error) {
+                        console.warn('Ошибка при изменении размера графика:', error);
+                        // Отключаем observer при ошибке
+                        chartResizeObserver.disconnect();
+                        chartResizeObserver = null;
+                    }
+                });
+                chartResizeObserver.observe(container);
+
+            } catch (error) {
+                console.error('Ошибка создания графика:', error);
+                container.innerHTML = `<div style="color: #f56565; padding: 2rem; text-align: center;">Ошибка создания графика: ${error.message}</div>`;
+            }
+        }
+
+        // Смена таймфрейма
+        async function changeTimeframe() {
+            if (!currentPair) return;
+            
+            // Отключаем старый ResizeObserver
+            if (chartResizeObserver) {
+                chartResizeObserver.disconnect();
+                chartResizeObserver = null;
+            }
+            
+            // Удаляем старый график
+            if (currentChart) {
+                try {
+                    currentChart.remove();
+                } catch (e) {
+                    console.warn('Ошибка при удалении графика:', e);
+                }
+                currentChart = null;
+            }
+            
+            // Показываем индикатор загрузки
+            document.getElementById('chart-container').innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #a0aec0;">
+                    <div style="text-align: center;">
+                        <div class="spinner"></div>
+                        <p style="margin-top: 1rem;">Загрузка данных...</p>
+                    </div>
+                </div>
+            `;
+            
+            // Загружаем данные с retry
+            await loadChartDataWithRetry(currentPair, document.getElementById('timeframe-selector').value, 3);
+        }
+
+        // Принудительный анализ
+        async function forceAnalysis() {
+            if (isLoading) {
+                console.log('Обновление уже идет, пропускаем');
+                return;
+            }
+
+            isLoading = true;
+            showButtonUpdating();
+            
+            try {
+                const response = await fetch('/api/force-analysis', { method: 'POST' });
+                const data = await response.json();
+                if (data.success) {
+                    console.log('Анализ запущен');
+                    setTimeout(() => fetchData(false), 2000); // Перезагружаем данные через 2 секунды без полного индикатора
+                }
+            } catch (error) {
+                console.error('Ошибка запуска анализа:', error);
+            } finally {
+                isLoading = false;
+                hideButtonUpdating();
+            }
+        }
+
+        // Смена темы
+        // Система переключения стилей
+        function toggleDesignMenu() {
+            const menu = document.getElementById('design-menu');
+            const dropdown = document.querySelector('.design-dropdown');
+            const isActive = menu.classList.contains('active');
+            const isCosmic = document.body.classList.contains('theme-cosmic');
+            
+            if (!isActive && dropdown) {
+                if (isCosmic) {
+                    // Для космической темы перемещаем меню в конец body, чтобы избежать обрезания
+                    const menuClone = menu.cloneNode(true);
+                    menuClone.id = 'design-menu-cosmic';
+                    menuClone.classList.add('cosmic-menu-portal');
+                    document.body.appendChild(menuClone);
+                    
+                    // Вычисляем позицию
+                    const rect = dropdown.getBoundingClientRect();
+                    menuClone.style.position = 'fixed';
+                    menuClone.style.top = (rect.bottom + 8) + 'px';
+                    menuClone.style.right = (window.innerWidth - rect.right) + 'px';
+                    menuClone.style.left = 'auto';
+                    menuClone.style.bottom = 'auto';
+                    menuClone.style.zIndex = '99999';
+                    menuClone.style.display = 'block';
+                    
+                    // Обновляем обработчики событий для клонированного меню
+                    menuClone.querySelectorAll('.design-option').forEach(option => {
+                        option.onclick = function() {
+                            const theme = this.dataset.theme;
+                            switchTheme(theme);
+                            // Удаляем клонированное меню
+                            menuClone.remove();
+                            menu.classList.remove('active');
+                        };
+                    });
+                    
+                    // Скрываем оригинальное меню
+                    menu.style.display = 'none';
+                } else {
+                    // Для других тем сбрасываем стили
+                    menu.style.position = '';
+                    menu.style.top = '';
+                    menu.style.right = '';
+                    menu.style.left = '';
+                    menu.style.bottom = '';
+                    menu.style.display = '';
+                }
+            } else if (isActive && isCosmic) {
+                // Закрываем меню в космической теме
+                const cosmicMenu = document.getElementById('design-menu-cosmic');
+                if (cosmicMenu) {
+                    cosmicMenu.remove();
+                }
+                menu.style.display = '';
+            }
+            
+            menu.classList.toggle('active');
+        }
+
+        // Закрытие меню при клике вне его
+        document.addEventListener('click', function(event) {
+            const dropdown = document.querySelector('.design-dropdown');
+            const menu = document.getElementById('design-menu');
+            const cosmicMenu = document.getElementById('design-menu-cosmic');
+            const isCosmic = document.body.classList.contains('theme-cosmic');
+            
+            if (isCosmic && cosmicMenu && !cosmicMenu.contains(event.target) && !dropdown.contains(event.target)) {
+                cosmicMenu.remove();
+                menu.classList.remove('active');
+                menu.style.display = '';
+            } else if (!isCosmic && dropdown && !dropdown.contains(event.target)) {
+                menu.classList.remove('active');
+            }
+        });
+
+        // Обновление позиции меню при скролле для космической темы
+        document.addEventListener('scroll', function() {
+            const cosmicMenu = document.getElementById('design-menu-cosmic');
+            const dropdown = document.querySelector('.design-dropdown');
+            
+            if (cosmicMenu && dropdown) {
+                const rect = dropdown.getBoundingClientRect();
+                cosmicMenu.style.top = (rect.bottom + 8) + 'px';
+                cosmicMenu.style.right = (window.innerWidth - rect.right) + 'px';
+            }
+        }, true);
+
+        function switchTheme(themeName) {
+            // Сохраняем выбор
+            localStorage.setItem('selectedTheme', themeName);
+            
+            // Применяем тему
+            document.body.className = `theme-${themeName}`;
+            
+            // Обновляем активный пункт меню
+            document.querySelectorAll('.design-option').forEach(option => {
+                option.classList.remove('active');
+                if (option.dataset.theme === themeName) {
+                    option.classList.add('active');
+                }
+            });
+            
+            // Обновляем логотип в зависимости от темы
+            updateLogo(themeName);
+            
+            // Закрываем меню
+            document.getElementById('design-menu').classList.remove('active');
+        }
+
+        function updateLogo(themeName) {
+            const logoSvg = document.querySelector('.logo svg');
+            if (!logoSvg) return;
+
+            const gradient = logoSvg.querySelector('#logoGradient');
+            const stops = gradient.querySelectorAll('stop');
+            
+            if (themeName === 'classic') {
+                // Классический: фиолетово-синий градиент
+                stops[0].setAttribute('style', 'stop-color:#667eea;stop-opacity:1');
+                stops[1].setAttribute('style', 'stop-color:#764ba2;stop-opacity:1');
+                stops[2].setAttribute('style', 'stop-color:#ec4899;stop-opacity:1');
+                // Упрощенный логотип для классического стиля
+                logoSvg.innerHTML = `
+                    <defs>
+                        <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                            <stop offset="50%" style="stop-color:#764ba2;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="30" fill="none" stroke="url(#logoGradient)" stroke-width="3"/>
+                    <circle cx="50" cy="50" r="20" fill="none" stroke="url(#logoGradient)" stroke-width="2"/>
+                    <circle cx="50" cy="50" r="8" fill="url(#logoGradient)"/>
+                `;
+            } else if (themeName === 'cosmic') {
+                // Космический: фиолетовый + золотой
+                stops[0].setAttribute('style', 'stop-color:#6c5ce7;stop-opacity:1');
+                stops[1].setAttribute('style', 'stop-color:#a29bfe;stop-opacity:1');
+                stops[2].setAttribute('style', 'stop-color:#fdcb6e;stop-opacity:1');
+                // Звездный логотип
+                logoSvg.innerHTML = `
+                    <defs>
+                        <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#6c5ce7;stop-opacity:1" />
+                            <stop offset="50%" style="stop-color:#a29bfe;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#fdcb6e;stop-opacity:1" />
+                        </linearGradient>
+                        <filter id="glow">
+                            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                            <feMerge>
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                    </defs>
+                    <circle cx="50" cy="50" r="35" fill="none" stroke="url(#logoGradient)" stroke-width="2" filter="url(#glow)" opacity="0.6"/>
+                    <polygon points="50,15 55,40 80,40 60,55 65,80 50,65 35,80 40,55 20,40 45,40" fill="url(#logoGradient)" filter="url(#glow)"/>
+                    <circle cx="50" cy="50" r="5" fill="url(#logoGradient)" filter="url(#glow)"/>
+                `;
+            } else {
+                // Cyberpunk: зеленый + розовый (текущий)
+                stops[0].setAttribute('style', 'stop-color:#00ff41;stop-opacity:1');
+                stops[1].setAttribute('style', 'stop-color:#00cc33;stop-opacity:1');
+                stops[2].setAttribute('style', 'stop-color:#ff006e;stop-opacity:1');
+                // Цифровой логотип
+                logoSvg.innerHTML = `
+                    <defs>
+                        <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#00ff41;stop-opacity:1" />
+                            <stop offset="50%" style="stop-color:#00cc33;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#ff006e;stop-opacity:1" />
+                        </linearGradient>
+                        <filter id="glow">
+                            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                            <feMerge>
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                    </defs>
+                    <rect x="20" y="20" width="60" height="60" fill="none" stroke="url(#logoGradient)" stroke-width="3" filter="url(#glow)"/>
+                    <rect x="30" y="30" width="40" height="40" fill="none" stroke="url(#logoGradient)" stroke-width="2" filter="url(#glow)"/>
+                    <line x1="20" y1="50" x2="30" y2="50" stroke="url(#logoGradient)" stroke-width="2" filter="url(#glow)"/>
+                    <line x1="70" y1="50" x2="80" y2="50" stroke="url(#logoGradient)" stroke-width="2" filter="url(#glow)"/>
+                    <line x1="50" y1="20" x2="50" y2="30" stroke="url(#logoGradient)" stroke-width="2" filter="url(#glow)"/>
+                    <line x1="50" y1="70" x2="50" y2="80" stroke="url(#logoGradient)" stroke-width="2" filter="url(#glow)"/>
+                    <circle cx="50" cy="50" r="5" fill="url(#logoGradient)" filter="url(#glow)"/>
+                    <path d="M25 25 L35 35 M65 25 L75 35 M25 75 L35 65 M65 75 L75 65" stroke="url(#logoGradient)" stroke-width="1.5" opacity="0.7" filter="url(#glow)"/>
+                `;
+            }
+        }
+
+        // Загрузка сохраненной темы при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('selectedTheme') || 'cyberpunk';
+            // Применяем тему без вызова switchTheme (чтобы не сохранять в localStorage повторно)
+            document.body.className = `theme-${savedTheme}`;
+            updateLogo(savedTheme);
+            
+            // Обновляем активный пункт меню дизайна
+            document.querySelectorAll('.design-option').forEach(option => {
+                option.classList.remove('active');
+                if (option.dataset.theme === savedTheme) {
+                    option.classList.add('active');
+                }
+            });
+            
+            // Отмечаем активную навигацию
+            const currentPath = window.location.pathname;
+            if (currentPath.includes('/demo-trading')) {
+                document.getElementById('nav-demo')?.classList.add('active');
+            } else if (currentPath.includes('/signals')) {
+                document.getElementById('nav-signals')?.classList.add('active');
+            } else {
+                document.getElementById('nav-dashboard')?.classList.add('active');
+            }
+        });
+
+        // Автообновление
+        let autoRefreshInterval;
+        
+        function startAutoRefresh() {
+            autoRefreshInterval = setInterval(() => {
+                if (!document.hidden && !isLoading) {
+                    fetchData(false); // false = не показывать полный индикатор загрузки
+                }
+            }, 30000);
+        }
+        
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+        }
+        
+        // Управление автообновлением при смене видимости страницы
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                stopAutoRefresh();
+            } else {
+                startAutoRefresh();
+            }
+        });
+
+        // Закрытие модального окна при клике вне его
+        window.onclick = function(event) {
+            const modal = document.getElementById('chart-modal');
+            if (event.target === modal) {
+                closeChartModal();
+            }
+        }
+
+        // Обработка ошибок CSP
+        window.addEventListener('error', function(e) {
+            if (e.message.includes('Content Security Policy')) {
+                console.warn('CSP Error detected:', e.message);
+            }
+        });
+    </script>
+</body>
+</html> 

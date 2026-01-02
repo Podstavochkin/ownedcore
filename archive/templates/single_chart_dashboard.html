@@ -1,0 +1,1855 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BTC/USDT - Interactive Chart</title>
+    <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #131722;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .menu-bar {
+            background-color: #1e222d;
+            border-bottom: 1px solid #2B2B43;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 60px;
+        }
+        .menu-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .symbol-info {
+            display: flex;
+            flex-direction: column;
+        }
+        .symbol-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #d1d4dc;
+        }
+        .current-price {
+            font-size: 24px;
+            font-weight: bold;
+            color: #26a69a;
+        }
+        
+        .connection-status {
+            font-size: 12px;
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+        
+        .status-connected {
+            background-color: #26a69a;
+            color: white;
+        }
+        
+        .status-disconnected {
+            background-color: #ef5350;
+            color: white;
+        }
+        .timeframe-switcher {
+            display: flex;
+            gap: 5px;
+        }
+        .timeframe-btn {
+            padding: 8px 16px;
+            background-color: #2a2e39;
+            color: #787b86;
+            border: 1px solid #3a3f4b;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .timeframe-btn:hover {
+            background-color: #3a3f4b;
+            color: #d1d4dc;
+        }
+        .timeframe-btn.active {
+            background-color: #2962ff;
+            color: white;
+            border-color: #2962ff;
+        }
+        .drawing-tools {
+            display: flex;
+            gap: 10px;
+            margin-left: 20px;
+            align-items: center;
+        }
+        .tool-group {
+            display: flex;
+            gap: 3px;
+            padding: 2px;
+            border-radius: 4px;
+            background-color: #1a1e2a;
+            border: 1px solid #2a2e39;
+        }
+        .tool-btn {
+            padding: 8px 12px;
+            background-color: #2a2e39;
+            color: #787b86;
+            border: 1px solid #3a3f4b;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 32px;
+        }
+        .tool-btn:hover {
+            background-color: #3a3f4b;
+            color: #d1d4dc;
+        }
+        .tool-btn.active {
+            background-color: #26a69a;
+            color: white;
+            border-color: #26a69a;
+        }
+        .tool-btn.eraser {
+            background-color: #ef5350;
+            color: white;
+            border-color: #ef5350;
+        }
+        .tool-btn.eraser:hover {
+            background-color: #d32f2f;
+        }
+        .menu-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .control-btn {
+            padding: 8px 16px;
+            background-color: #2a2e39;
+            color: #d1d4dc;
+            border: 1px solid #3a3f4b;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        .control-btn:hover {
+            background-color: #3a3f4b;
+        }
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+            height: calc(100vh - 60px);
+            padding: 20px;
+        }
+        .chart-section {
+            background-color: #1e222d;
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .chart-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #d1d4dc;
+        }
+        .chart-price {
+            font-size: 18px;
+            font-weight: bold;
+            color: #26a69a;
+        }
+        .chart-wrapper {
+            position: relative;
+            flex: 1;
+        }
+        .chart-container {
+            width: 100%;
+            height: 600px;
+            background-color: #131722;
+            position: relative;
+            z-index: 1;
+        }
+        .volume-container {
+            height: 120px;
+            background-color: #131722;
+            border-radius: 4px;
+            border-top: 1px solid #2B2B43;
+        }
+        .sidebar {
+            background-color: #1e222d;
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .signal-card {
+            background-color: #2a2e39;
+            padding: 15px;
+            border-radius: 6px;
+        }
+        .signal-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #d1d4dc;
+        }
+        .signal-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #3a3f4b;
+        }
+        .signal-item:last-child {
+            border-bottom: none;
+        }
+        .signal-label {
+            color: #787b86;
+            font-size: 12px;
+        }
+        .signal-value {
+            color: #d1d4dc;
+            font-weight: bold;
+        }
+        .signal-value.buy {
+            color: #26a69a;
+        }
+        .signal-value.sell {
+            color: #ef5350;
+        }
+        .signal-value.neutral {
+            color: #787b86;
+        }
+        .stats-card {
+            background-color: #2a2e39;
+            padding: 15px;
+            border-radius: 6px;
+        }
+        .stats-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #d1d4dc;
+        }
+        .stats-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #3a3f4b;
+        }
+        .stats-item:last-child {
+            border-bottom: none;
+        }
+        .stats-label {
+            color: #787b86;
+            font-size: 12px;
+        }
+        .stats-value {
+            color: #d1d4dc;
+            font-weight: bold;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-buy {
+            background-color: #26a69a;
+        }
+        .status-sell {
+            background-color: #ef5350;
+        }
+        .status-neutral {
+            background-color: #787b86;
+        }
+        .drawing-info {
+            background-color: #2a2e39;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: auto;
+        }
+        .drawing-info h3 {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #d1d4dc;
+        }
+        .drawing-info p {
+            font-size: 12px;
+            color: #787b86;
+            margin: 5px 0;
+        }
+        .drawing-info .key {
+            color: #26a69a;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        // Диагностика на стороне шаблона (Jinja2)
+        // (Удаляем логи Jinja2, т.к. массивы свечей больше не сериализуются)
+    </script>
+    <div class="menu-bar">
+        <div class="menu-left">
+            <div class="symbol-info">
+                <div class="symbol-name">BTC/USDT</div>
+                <div class="current-price" id="current-price">$107838.66</div>
+                <div class="connection-status" id="connection-status">🔴 Offline</div>
+            </div>
+            
+            <div class="timeframe-switcher">
+                <button class="timeframe-btn active" onclick="switchTimeframe('5m')">5M</button>
+                <button class="timeframe-btn" onclick="switchTimeframe('15m')">15M</button>
+                <button class="timeframe-btn" onclick="switchTimeframe('1h')">1H</button>
+                <button class="timeframe-btn" onclick="switchTimeframe('4h')">4H</button>
+            </div>
+            
+            <div class="drawing-tools">
+                <div class="tool-group">
+                    <button class="tool-btn" onclick="setDrawingTool('horizontal')" title="Горизонтальная линия (H)">
+                        <span>─</span>
+                    </button>
+                    <button class="tool-btn" onclick="setDrawingTool('vertical')" title="Вертикальная линия (V)">
+                        <span>│</span>
+                    </button>
+                    <button class="tool-btn" onclick="setDrawingTool('trend')" title="Линия тренда (T)">
+                        <span>↗</span>
+                    </button>
+                </div>
+                
+                <div class="tool-group">
+                    <button class="tool-btn" onclick="setDrawingTool('arrow')" title="Стрелка (A)">
+                        <span>→</span>
+                    </button>
+                    <button class="tool-btn" onclick="setDrawingTool('rectangle')" title="Прямоугольник (R)">
+                        <span>□</span>
+                    </button>
+                    <button class="tool-btn" onclick="setDrawingTool('ellipse')" title="Эллипс (E)">
+                        <span>○</span>
+                    </button>
+                </div>
+                
+                <div class="tool-group">
+                    <button class="tool-btn" onclick="setDrawingTool('fibonacci')" title="Фибоначчи (F)">
+                        <span>F</span>
+                    </button>
+                    <button class="tool-btn" onclick="setDrawingTool('text')" title="Текст (X)">
+                        <span>T</span>
+                    </button>
+                    <button class="tool-btn eraser" onclick="setDrawingTool('eraser')" title="Ластик (Delete)">
+                        <span>⌫</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="menu-right">
+            <button class="control-btn" onclick="clearAllDrawings()">Очистить все</button>
+            <button class="control-btn" onclick="exportChart()">Экспорт</button>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <div class="chart-section">
+            <div class="chart-header">
+                <div class="chart-title">BTC/USDT - <span id="timeframe-display">5M</span></div>
+                <div class="chart-price" id="chart-price">$107838.66</div>
+            </div>
+            
+            <div class="chart-wrapper">
+                <div id="chart" class="chart-container"></div>
+            <div id="volume-chart" class="volume-container"></div>
+            </div>
+        </div>
+        
+        <div class="sidebar">
+            <div class="signal-card">
+                <div class="signal-title">Сигналы стратегии</div>
+                            <div class="signal-item">
+                    <span class="signal-label">Тренд 1H:</span>
+                    <span class="signal-value neutral">
+                        НИСХОДЯЩИЙ
+                    </span>
+                            </div>
+                <div class="signal-item">
+                    <span class="signal-label">ADX 1H:</span>
+                    <span class="signal-value">0.0</span>
+                </div>
+                <div class="signal-item">
+                    <span class="signal-label">Уровни:</span>
+                    <span class="signal-value">0</span>
+                </div>
+                <div class="signal-item">
+                    <span class="signal-label">Последний сигнал:</span>
+                    <span class="signal-value neutral">
+                        N/A
+                    </span>
+                </div>
+            </div>
+            
+            <div class="stats-card">
+                <div class="stats-title">Статистика</div>
+                <div class="stats-item">
+                    <span class="stats-label">Свечей:</span>
+                    <span class="stats-value" id="candles-count">288</span>
+                </div>
+                <div class="stats-item">
+                    <span class="stats-label">Изменение 24ч:</span>
+                    <span class="stats-value sell">
+                        -0.58%
+                    </span>
+                </div>
+                <div class="stats-item">
+                    <span class="stats-label">Объем 24ч:</span>
+                    <span class="stats-value">10,073</span>
+                </div>
+            </div>
+            
+            <div class="drawing-info">
+                <h3>Инструменты рисования</h3>
+                <p><span class="key">H</span> - Горизонтальная линия</p>
+                <p><span class="key">V</span> - Вертикальная линия</p>
+                <p><span class="key">T</span> - Линия тренда</p>
+                <p><span class="key">A</span> - Стрелка</p>
+                <p><span class="key">R</span> - Прямоугольник</p>
+                <p><span class="key">E</span> - Эллипс</p>
+                <p><span class="key">F</span> - Фибоначчи</p>
+                <p><span class="key">T</span> - Текст</p>
+                <p><span class="key">Delete</span> - Удалить выбранное</p>
+                <p><span class="key">Esc</span> - Отменить инструмент</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === Глобальные переменные ===
+        let chart, volumeChart, candlestick, volume;
+        let currentTimeframe = '5m';
+        let websocket = null;
+        let ajaxInterval;
+        // chartData теперь будет инициализироваться после AJAX-загрузки
+        let chartData = {};
+
+        // === Загрузка всех свечей через AJAX при старте ===
+        function loadInitialCandles() {
+            const ports = [8080, 8081, 5000];
+            let portIndex = 0;
+            function tryNextPort() {
+                if (portIndex >= ports.length) {
+                    console.error('❌ Не удалось подключиться ни к одному порту!');
+                    return;
+                }
+                const port = ports[portIndex++];
+                const url = `http://localhost:${port}/api/data`;
+                console.log('📡 Попытка подключения к порту', port + '...');
+                fetch(url)
+                    .then(r => r.json())
+                    .then(resp => {
+                        console.log('📡 Получены данные:', resp);
+                        if (resp.status !== 'success') {
+                            throw new Error('API error');
+                        }
+                        const data = resp.data;
+                        console.log('📊 Обработка данных:', data);
+                        // chartData теперь массивы
+                        chartData = data;
+                        // Инициализация графика только после получения данных
+                        initChartWithData(chartData);
+                    })
+                    .catch(e => {
+                        console.error('❌ Ошибка подключения к порту', port + ':', e);
+                        tryNextPort();
+                    });
+            }
+            tryNextPort();
+        }
+
+        // === Функция инициализации графика ===
+        function initChartWithData(chartData) {
+            ['5m','15m','1h','4h'].forEach(tf => {
+                const candles = chartData[tf];
+                console.log(`[CHART INIT] Таймфрейм ${tf}: typeof=`, typeof candles, ', Array.isArray=', Array.isArray(candles));
+                if (Array.isArray(candles)) {
+                    console.log(`[CHART INIT] ${tf} length:`, candles.length);
+                    if (candles.length > 0) {
+                        console.log(`[CHART INIT] ${tf} first:`, candles[0]);
+                        console.log(`[CHART INIT] ${tf} last:`, candles[candles.length-1]);
+                    }
+                } else {
+                    console.error(`[CHART INIT] ❌ chartData[${tf}] не массив!`, candles);
+                }
+            });
+            // Пример для 5m
+            const candles = chartData['5m'];
+            if (!Array.isArray(candles)) {
+                console.error('❌ chartData[5m] не массив!', candles);
+                return;
+            }
+            if (candles.length === 0) {
+                console.warn('⚠️ chartData[5m] пустой массив!');
+                return;
+            }
+            console.log(`[CHART INIT] Таймфрейм 5m, свечей: ${candles.length}`);
+            // ... здесь твоя логика инициализации графика ...
+            // chart.setData(candles) и т.д.
+        }
+        
+        // === Простые AJAX обновления ===
+        function startAjaxUpdates() {
+            console.log('🔄 Запуск AJAX обновлений...');
+            
+            // Останавливаем предыдущий интервал
+            if (ajaxInterval) {
+                clearInterval(ajaxInterval);
+            }
+            
+            // Запускаем периодические запросы каждые 5 секунд
+            ajaxInterval = setInterval(() => {
+                // Пытаемся подключиться к разным портам
+                const ports = [8080, 8081, 8082, 8083, 8084, 8085];
+                let currentPortIndex = 0;
+                
+                function tryNextPort() {
+                    if (currentPortIndex >= ports.length) {
+                        console.error('❌ Не удалось подключиться ни к одному порту');
+                        updateConnectionStatus(false);
+                        return;
+                    }
+                    
+                    const port = ports[currentPortIndex];
+                    console.log(`📡 Попытка подключения к порту ${port}...`);
+                    
+                    fetch(`http://localhost:${port}/api/data`)
+                        .then(response => {
+                            console.log('📡 Получен ответ:', response.status, response.statusText);
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('📡 Получены данные:', data);
+                            if (data.status === 'success' && data.data) {
+                                console.log('📊 Обработка данных:', data.data);
+                                handleAjaxData(data.data);
+                            } else {
+                                console.warn('⚠️ Неверный формат данных:', data);
+                            }
+                        })
+                        .catch(error => {
+                            console.error(`❌ Ошибка подключения к порту ${port}:`, error);
+                            currentPortIndex++;
+                            setTimeout(tryNextPort, 100); // Пробуем следующий порт через 100мс
+                        });
+                }
+                
+                // Запускаем попытки подключения
+                tryNextPort();
+            }, 5000);
+        }
+        
+        function handleAjaxData(data) {
+            console.log('📡 Получены данные AJAX:', data);
+            
+            // Обновляем данные для каждого таймфрейма
+            Object.keys(data).forEach(interval => {
+                if (data[interval]) {
+                    console.log(`🔄 Обработка данных для ${interval}:`, data[interval]);
+                    updateLiveData(interval, data[interval]);
+                }
+            });
+            
+            // Обновляем статус подключения
+            updateConnectionStatus(true);
+        }
+        
+        function updateLiveData(interval, newCandle) {
+            // Обновляем данные только для текущего таймфрейма
+            if (interval === currentTimeframe) {
+                console.log(`📊 Обновление данных для ${interval}:`, newCandle);
+                
+                // Создаем новую свечу в правильном формате
+                const newData = {
+                    time: Math.floor(newCandle.timestamp / 1000),
+                    open: newCandle.open,
+                    high: newCandle.high,
+                    low: newCandle.low,
+                    close: newCandle.close,
+                    volume: newCandle.volume
+                };
+                
+                // Обновляем кэш данных
+                if (!chartData[interval]) {
+                    chartData[interval] = [];
+                }
+                
+                // Проверяем, есть ли уже свеча с таким временем
+                const existingIndex = chartData[interval].findIndex(candle => candle.time === newData.time);
+                
+                if (existingIndex >= 0) {
+                    // Обновляем существующую свечу
+                    chartData[interval][existingIndex] = newData;
+                    console.log(`🔄 Обновлена существующая свеча: ${newData.time}`);
+                } else {
+                    // Добавляем новую свечу
+                    chartData[interval].push(newData);
+                    console.log(`➕ Добавлена новая свеча: ${newData.time}`);
+                }
+                
+                // Сортируем данные по времени
+                chartData[interval].sort((a, b) => a.time - b.time);
+                
+                // Обновляем график свечей
+                candlestick.setData(chartData[interval]);
+                
+                // Обновляем график объема
+                const volumeData = chartData[interval].map(item => ({
+                        time: item.time,
+                        value: item.volume,
+                        color: item.close >= item.open ? '#26a69a' : '#ef5350'
+                    }));
+                    volume.setData(volumeData);
+                
+                // Обновляем текущую цену
+                document.getElementById('chart-price').textContent = `$${newCandle.close.toFixed(2)}`;
+                document.getElementById('current-price').textContent = `$${newCandle.close.toFixed(2)}`;
+                
+                // Обновляем статистику
+                updateStatistics(newCandle);
+                
+                // Обновляем счетчик свечей
+                document.getElementById('candles-count').textContent = chartData[interval].length;
+                
+                console.log(`✅ График обновлен. Всего свечей: ${chartData[interval].length}`);
+            }
+        }
+        
+        function updateChartData(data) {
+            // Обновляем кэш данных
+            Object.keys(data).forEach(interval => {
+                if (data[interval]) {
+                    chartData[interval] = [{
+                        time: Math.floor(data[interval].timestamp / 1000),
+                        open: data[interval].open,
+                        high: data[interval].high,
+                        low: data[interval].low,
+                        close: data[interval].close,
+                        volume: data[interval].volume
+                    }];
+                }
+            });
+        }
+        
+        function updateConnectionStatus(connected) {
+            const statusElement = document.getElementById('connection-status');
+            if (statusElement) {
+                statusElement.textContent = connected ? '🟢 Live' : '🔴 Offline';
+                statusElement.className = connected ? 'status-connected' : 'status-disconnected';
+            }
+        }
+        
+        function updateStatistics(latestCandle) {
+            // Обновляем статистику в реальном времени
+            const priceChange = latestCandle.close - latestCandle.open;
+            const priceChangePercent = (priceChange / latestCandle.open) * 100;
+            
+            // Обновляем отображение изменения цены
+            const changeElement = document.getElementById('price-change');
+            if (changeElement) {
+                const changeText = `${priceChange >= 0 ? '+' : ''}${priceChange.toFixed(2)} (${priceChangePercent >= 0 ? '+' : ''}${priceChangePercent.toFixed(2)}%)`;
+                changeElement.textContent = changeText;
+                changeElement.className = priceChange >= 0 ? 'positive-change' : 'negative-change';
+            }
+        }
+        
+        // === Система состояний для рисования ===
+        let drawingState = {
+            mode: 'view', // 'view', 'drawing', 'selecting'
+            currentTool: null,
+            isDrawing: false,
+            startPoint: null,
+            endPoint: null,
+            previewElement: null,
+            selectedElement: null
+        };
+        
+        // === Коллекция нарисованных элементов ===
+        let drawingElements = [];
+        
+        // === Обработчики инструментов рисования ===
+        function setDrawingTool(tool) {
+            // Снимаем активность со всех кнопок
+            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+            
+            if (tool === null) {
+                drawingState.mode = 'view';
+                drawingState.currentTool = null;
+                clearPreview();
+                return;
+            }
+            
+            // Активируем выбранную кнопку
+            const toolBtn = document.querySelector(`[onclick="setDrawingTool('${tool}')"]`);
+            if (toolBtn) toolBtn.classList.add('active');
+            
+            drawingState.mode = 'drawing';
+            drawingState.currentTool = tool;
+            clearPreview();
+            
+            console.log(`Активирован инструмент: ${tool}`);
+        }
+        
+        function clearPreview() {
+            if (drawingState.previewElement) {
+                if (Array.isArray(drawingState.previewElement)) {
+                    drawingState.previewElement.forEach(el => el.remove());
+            } else {
+                    drawingState.previewElement.remove();
+                }
+                drawingState.previewElement = null;
+            }
+        }
+
+        // === Обработчики событий графика ===
+        function handleChartClick(param) {
+            if (drawingState.mode === 'view') {
+                // Режим просмотра - проверяем выделение элементов
+                const clickedElement = findElementAtPoint(param.time, param.point);
+                if (clickedElement) {
+                    selectElement(clickedElement);
+                    // Начинаем перетаскивание, если элемент выбран
+                    startDragging(param);
+                } else {
+                    selectElement(null);
+                }
+                return;
+            }
+            
+            if (drawingState.mode === 'drawing') {
+                // Режим рисования
+                if (drawingState.currentTool === 'text') {
+                    // Для текста создаем сразу при первом клике
+                    handleTextClick(param);
+                } else if (drawingState.currentTool === 'eraser') {
+                    // Для ластика удаляем элемент под курсором
+                    const elementToDelete = findElementAtPoint(param.time, param.point);
+                    if (elementToDelete) {
+                        deleteElement(elementToDelete);
+                    }
+                } else if (!drawingState.isDrawing) {
+                    // Первый клик - начало рисования
+                    startDrawing(param);
+                } else {
+                    // Второй клик - завершение рисования
+                    finishDrawing(param);
+                }
+            }
+        }
+        
+        // === Функции перетаскивания ===
+        let isDragging = false;
+        let dragStartPoint = null;
+        
+        function startDragging(param) {
+            if (drawingState.selectedElement) {
+                isDragging = true;
+                dragStartPoint = {
+                time: param.time,
+                    price: param.seriesData.get(candlestick)?.close || 0
+                };
+                console.log('Начало перетаскивания элемента:', drawingState.selectedElement.type);
+            }
+        }
+        
+        function moveElement(element, newTime, newPrice) {
+            if (!element) return;
+            
+            switch (element.type) {
+                case 'horizontal':
+                    if (element.priceLine) {
+                        element.priceLine.applyOptions({
+                            price: newPrice,
+                            title: `Уровень ${newPrice.toFixed(2)}`
+                        });
+                        element.price = newPrice;
+                    }
+                    break;
+                case 'text':
+                    if (element.marker) {
+                        const newMarkers = [{
+                            time: newTime,
+                            position: 'inBar',
+                            color: element.marker.color,
+                            shape: element.marker.shape,
+                            text: element.marker.text
+                        }];
+                        candlestick.setMarkers(newMarkers);
+                        element.time = newTime;
+                        element.price = newPrice;
+                    }
+                    break;
+                case 'trend':
+                    if (element.series) {
+                        // Для линии тренда перемещаем только конечную точку
+                        element.series.setData([
+                            { time: element.startTime, value: element.startPrice },
+                            { time: newTime, value: newPrice }
+                        ]);
+                        element.endTime = newTime;
+                        element.endPrice = newPrice;
+                    }
+                    break;
+                case 'arrow':
+                case 'rectangle':
+                    if (element.series) {
+                        element.series.setData([
+                            { time: element.startTime, value: element.startPrice },
+                            { time: newTime, value: newPrice }
+                        ]);
+                        element.endTime = newTime;
+                        element.endPrice = newPrice;
+                    }
+                    break;
+            }
+        }
+        
+        function handleDrag(param) {
+            if (isDragging && drawingState.selectedElement && dragStartPoint) {
+                // Получаем текущую цену
+                let currentPrice = 0;
+                if (param.seriesData && param.seriesData.size > 0) {
+                    const seriesData = param.seriesData.get(candlestick);
+                    if (seriesData) {
+                        currentPrice = seriesData.close;
+                    }
+                }
+                
+                if (currentPrice === 0 && param.point) {
+                    currentPrice = getPriceFromPoint(param.point);
+                }
+                
+                // Перемещаем элемент только если координаты изменились
+                if (param.time !== dragStartPoint.time || Math.abs(currentPrice - dragStartPoint.price) > 1) {
+                    moveElement(drawingState.selectedElement, param.time, currentPrice);
+                    dragStartPoint = { time: param.time, price: currentPrice };
+                }
+            }
+        }
+        
+        function stopDragging() {
+            isDragging = false;
+            dragStartPoint = null;
+            console.log('Остановка перетаскивания');
+        }
+        
+        function moveElement(element, newTime, newPrice) {
+            if (!element) return;
+            
+            switch (element.type) {
+                case 'text':
+                    // Обновляем данные серии
+                    element.series.setData([
+                        { time: newTime, value: newPrice }
+                    ]);
+                    
+                    // Обновляем маркер
+                    const markers = [{
+                        time: newTime,
+                        position: 'aboveBar',
+                        color: '#ffeb3b', // Желтый цвет для выделенного элемента
+                        shape: 'circle',
+                        text: element.text,
+                        size: 1
+                    }];
+                    element.series.setMarkers(markers);
+                    
+                    // Обновляем координаты элемента
+                    element.time = newTime;
+                    element.price = newPrice;
+                    break;
+                    
+                case 'horizontal':
+                    if (element.priceLine) {
+                        element.priceLine.applyOptions({ price: newPrice });
+                        element.price = newPrice;
+                    }
+                    break;
+                    
+                case 'vertical':
+                    // Для вертикальных линий обновляем время
+                    element.series.setData([
+                        { time: newTime, value: element.price }
+                    ]);
+                    element.time = newTime;
+                    break;
+                    
+                case 'trend':
+                case 'arrow':
+                case 'rectangle':
+                    // Для линий обновляем конечную точку
+                    element.series.setData([
+                        { time: element.startTime, value: element.startPrice },
+                        { time: newTime, value: newPrice }
+                    ]);
+                    element.endTime = newTime;
+                    element.endPrice = newPrice;
+                    break;
+            }
+        }
+        
+        function handleTextClick(param) {
+            // Правильно получаем цену из данных серии
+            let price = 0;
+            if (param.seriesData && param.seriesData.size > 0) {
+                const seriesData = param.seriesData.get(candlestick);
+                if (seriesData) {
+                    price = seriesData.close;
+                }
+            }
+            
+            // Если не удалось получить цену из данных, используем координаты
+            if (price === 0 && param.point) {
+                price = getPriceFromPoint(param.point);
+            }
+            
+            const point = {
+                time: param.time,
+                price: price
+            };
+            
+            // Создаем текстовую аннотацию
+            const element = createTextAnnotation(point);
+            if (element) {
+                drawingElements.push(element);
+                console.log(`Создана текстовая аннотация:`, element);
+            }
+            
+            // Возвращаемся в режим просмотра
+            setDrawingTool(null);
+        }
+        
+        function startDrawing(param) {
+            drawingState.isDrawing = true;
+            
+            // Правильно получаем цену из данных серии
+            let price = 0;
+            if (param.seriesData && param.seriesData.size > 0) {
+                const seriesData = param.seriesData.get(candlestick);
+                if (seriesData) {
+                    price = seriesData.close;
+                }
+            }
+            
+            // Если не удалось получить цену из данных, используем координаты
+            if (price === 0 && param.point) {
+                price = getPriceFromPoint(param.point);
+            }
+            
+            drawingState.startPoint = {
+                time: param.time,
+                price: price
+            };
+            
+            console.log(`Начало рисования ${drawingState.currentTool} в точке:`, drawingState.startPoint);
+        }
+        
+        function finishDrawing(param) {
+            if (!drawingState.startPoint) return;
+            
+            // Правильно получаем цену из данных серии
+            let price = 0;
+            if (param.seriesData && param.seriesData.size > 0) {
+                const seriesData = param.seriesData.get(candlestick);
+                if (seriesData) {
+                    price = seriesData.close;
+                }
+            }
+            
+            // Если не удалось получить цену из данных, используем координаты
+            if (price === 0 && param.point) {
+                price = getPriceFromPoint(param.point);
+            }
+            
+            const endPoint = {
+                time: param.time,
+                price: price
+            };
+            
+            // Создаем финальный элемент
+            const element = createDrawingElement(drawingState.currentTool, drawingState.startPoint, endPoint);
+            if (element) {
+                drawingElements.push(element);
+                console.log(`Создан элемент:`, element);
+            }
+            
+            // Очищаем состояние
+            clearPreview();
+            drawingState.isDrawing = false;
+            drawingState.startPoint = null;
+            drawingState.endPoint = null;
+            
+            // Возвращаемся в режим просмотра
+                setDrawingTool(null);
+        }
+        
+        function handleChartMouseMove(param) {
+            if (drawingState.mode === 'drawing' && drawingState.isDrawing && drawingState.currentTool !== 'text') {
+                // Обновляем превью при движении мыши
+                updatePreview(param);
+            }
+        }
+        
+        function updatePreview(param) {
+            if (!drawingState.startPoint) return;
+            
+            clearPreview();
+            
+            // Правильно получаем цену из данных серии
+            let currentPrice = 0;
+            if (param.seriesData && param.seriesData.size > 0) {
+                const seriesData = param.seriesData.get(candlestick);
+                if (seriesData) {
+                    currentPrice = seriesData.close;
+                }
+            }
+            
+            // Если не удалось получить цену из данных, используем координаты
+            if (currentPrice === 0 && param.point) {
+                currentPrice = getPriceFromPoint(param.point);
+            }
+            
+            switch (drawingState.currentTool) {
+                case 'horizontal':
+                    createHorizontalLinePreview(drawingState.startPoint.price);
+                    break;
+                case 'vertical':
+                    createVerticalLinePreview(drawingState.startPoint.time);
+                    break;
+                case 'trend':
+                    createTrendLinePreview(drawingState.startPoint, { time: param.time, price: currentPrice });
+                    break;
+                case 'arrow':
+                    createArrowPreview(drawingState.startPoint, { time: param.time, price: currentPrice });
+                    break;
+                case 'rectangle':
+                    createRectanglePreview(drawingState.startPoint, { time: param.time, price: currentPrice });
+                    break;
+                case 'text':
+                    createTextPreview({ time: param.time, price: currentPrice });
+                    break;
+            }
+        }
+        
+        // === Создание элементов рисования ===
+        function createDrawingElement(type, startPoint, endPoint) {
+            switch (type) {
+                case 'horizontal':
+                    return createHorizontalLine(startPoint.price);
+                case 'vertical':
+                    return createVerticalLine(startPoint.time);
+                case 'trend':
+                    return createTrendLine(startPoint, endPoint);
+                case 'arrow':
+                    return createArrow(startPoint, endPoint);
+                case 'rectangle':
+                    return createRectangle(startPoint, endPoint);
+                case 'text':
+                    return createTextAnnotation(startPoint);
+                default:
+                    return null;
+            }
+        }
+        
+        function createHorizontalLine(price) {
+            // Правильное использование createPriceLine на серии candlestick
+            const priceLine = candlestick.createPriceLine({
+                price: price,
+                        color: '#26a69a',
+                        lineWidth: 2,
+                lineStyle: LightweightCharts.LineStyle.Solid,
+                axisLabelVisible: true,
+                title: `Уровень ${price.toFixed(2)}`
+            });
+            
+            return {
+                        type: 'horizontal',
+                price: price,
+                priceLine: priceLine,
+                id: Date.now()
+            };
+        }
+        
+        function createHorizontalLinePreview(price) {
+            // Создаем превью как временную линию
+            const priceLine = candlestick.createPriceLine({
+                price: price,
+                            color: '#26a69a',
+                            lineWidth: 2,
+                lineStyle: LightweightCharts.LineStyle.Dashed,
+                axisLabelVisible: true,
+                title: `Предварительный уровень ${price.toFixed(2)}`
+            });
+            
+            drawingState.previewElement = priceLine;
+        }
+        
+        function createVerticalLine(time) {
+            // Для вертикальных линий используем маркеры
+            const markers = [{
+                time: time,
+                position: 'inBar',
+                color: '#ef5350',
+                shape: 'circle',
+                text: 'Вертикальная линия'
+            }];
+            
+            // Создаем отдельную серию маркеров
+            const markerSeries = chart.addLineSeries({
+                color: '#ef5350',
+                lineWidth: 2,
+                lineStyle: LightweightCharts.LineStyle.Solid,
+                lastValueVisible: false,
+                priceLineVisible: false
+            });
+            
+            // Добавляем маркер
+            markerSeries.setMarkers(markers);
+            
+            return {
+                            type: 'vertical',
+                time: time,
+                series: markerSeries,
+                id: Date.now()
+            };
+        }
+        
+        function createVerticalLinePreview(time) {
+            const markers = [{
+                time: time,
+                position: 'inBar',
+                color: '#ef5350',
+                shape: 'circle',
+                text: 'Предварительная вертикальная линия'
+            }];
+            
+            const markerSeries = chart.addLineSeries({
+                color: '#ef5350',
+                        lineWidth: 2,
+                lineStyle: LightweightCharts.LineStyle.Dashed,
+                lastValueVisible: false,
+                priceLineVisible: false
+            });
+            
+            markerSeries.setMarkers(markers);
+            drawingState.previewElement = markerSeries;
+        }
+        
+        function createTrendLine(startPoint, endPoint) {
+            // Создаем отдельную серию для линии тренда
+            const lineSeries = chart.addLineSeries({
+                color: '#2962ff',
+                lineWidth: 2,
+                lineStyle: LightweightCharts.LineStyle.Solid,
+                lastValueVisible: false,
+                priceLineVisible: false
+            });
+            
+            lineSeries.setData([
+                { time: startPoint.time, value: startPoint.price },
+                { time: endPoint.time, value: endPoint.price }
+            ]);
+            
+            return {
+                        type: 'trend',
+                startTime: startPoint.time,
+                startPrice: startPoint.price,
+                endTime: endPoint.time,
+                endPrice: endPoint.price,
+                series: lineSeries,
+                id: Date.now()
+            };
+        }
+        
+        function createTrendLinePreview(startPoint, endPoint) {
+            const lineSeries = chart.addLineSeries({
+                color: '#2962ff',
+                lineWidth: 2,
+                lineStyle: LightweightCharts.LineStyle.Dashed,
+                lastValueVisible: false,
+                priceLineVisible: false
+            });
+            
+            lineSeries.setData([
+                { time: startPoint.time, value: startPoint.price },
+                { time: endPoint.time, value: endPoint.price }
+            ]);
+            
+            drawingState.previewElement = lineSeries;
+        }
+        
+        function createArrow(startPoint, endPoint) {
+            const lineSeries = chart.addLineSeries({
+                color: '#ff9800',
+                lineWidth: 3,
+                lineStyle: LightweightCharts.LineStyle.Solid,
+                lastValueVisible: false,
+                priceLineVisible: false
+            });
+            
+            // Создаем стрелку из нескольких сегментов
+            const arrowData = calculateArrowPoints(startPoint, endPoint);
+            lineSeries.setData(arrowData);
+            
+            return {
+                type: 'arrow',
+                startTime: startPoint.time,
+                startPrice: startPoint.price,
+                endTime: endPoint.time,
+                endPrice: endPoint.price,
+                series: lineSeries,
+                id: Date.now()
+            };
+        }
+        
+        function createArrowPreview(startPoint, endPoint) {
+            const lineSeries = chart.addLineSeries({
+                color: '#ff9800',
+                lineWidth: 3,
+                lineStyle: LightweightCharts.LineStyle.Dashed,
+                lastValueVisible: false,
+                priceLineVisible: false
+            });
+            
+            const arrowData = calculateArrowPoints(startPoint, endPoint);
+            lineSeries.setData(arrowData);
+            
+            drawingState.previewElement = lineSeries;
+        }
+        
+        function calculateArrowPoints(startPoint, endPoint) {
+            // Простая стрелка - линия с наконечником
+            const dx = endPoint.time - startPoint.time;
+            const dy = endPoint.price - startPoint.price;
+            const arrowLength = Math.abs(dx) * 0.1; // 10% от длины линии
+            
+            const arrowData = [
+                { time: startPoint.time, value: startPoint.price },
+                { time: endPoint.time, value: endPoint.price }
+            ];
+            
+            // Добавляем наконечник стрелки
+            if (dx > 0) {
+                arrowData.push({ time: endPoint.time - arrowLength, value: endPoint.price - dy * 0.1 });
+                arrowData.push({ time: endPoint.time, value: endPoint.price });
+                arrowData.push({ time: endPoint.time - arrowLength, value: endPoint.price + dy * 0.1 });
+            }
+            
+            return arrowData;
+        }
+        
+        function createRectangle(startPoint, endPoint) {
+            const lineSeries = chart.addLineSeries({
+                color: '#9c27b0',
+                lineWidth: 2,
+                lineStyle: LightweightCharts.LineStyle.Solid,
+                lastValueVisible: false,
+                priceLineVisible: false
+            });
+            
+            // Создаем прямоугольник из 4 линий
+            const rectData = [
+                { time: startPoint.time, value: startPoint.price },
+                { time: endPoint.time, value: startPoint.price },
+                { time: endPoint.time, value: endPoint.price },
+                { time: startPoint.time, value: endPoint.price },
+                { time: startPoint.time, value: startPoint.price }
+            ];
+            
+            lineSeries.setData(rectData);
+            
+            return {
+                type: 'rectangle',
+                startTime: startPoint.time,
+                startPrice: startPoint.price,
+                endTime: endPoint.time,
+                endPrice: endPoint.price,
+                series: lineSeries,
+                id: Date.now()
+            };
+        }
+        
+        function createRectanglePreview(startPoint, endPoint) {
+                    const lineSeries = chart.addLineSeries({
+                color: '#9c27b0',
+                lineWidth: 2,
+                lineStyle: LightweightCharts.LineStyle.Dashed,
+                lastValueVisible: false,
+                priceLineVisible: false
+            });
+            
+            const rectData = [
+                { time: startPoint.time, value: startPoint.price },
+                { time: endPoint.time, value: startPoint.price },
+                { time: endPoint.time, value: endPoint.price },
+                { time: startPoint.time, value: endPoint.price },
+                { time: startPoint.time, value: startPoint.price }
+            ];
+            
+            lineSeries.setData(rectData);
+            
+            drawingState.previewElement = lineSeries;
+        }
+        
+        function createTextAnnotation(point) {
+            // Запрашиваем текст у пользователя
+            const text = prompt('Введите текст для аннотации:', 'Текст');
+            if (!text) return null;
+            
+            // Создаем отдельную серию для текстовых маркеров
+            const markerSeries = chart.addLineSeries({
+                color: '#ffffff',
+                lineWidth: 0,
+                lastValueVisible: false,
+                priceLineVisible: false
+            });
+            
+            // Добавляем данные в серию (нужно для отображения маркеров)
+            markerSeries.setData([
+                { time: point.time, value: point.price }
+            ]);
+            
+            // Создаем маркер с текстом
+            const markers = [{
+                time: point.time,
+                position: 'aboveBar',
+                color: '#ffffff',
+                shape: 'circle',
+                text: text,
+                size: 1
+            }];
+            
+            markerSeries.setMarkers(markers);
+            
+            return {
+                type: 'text',
+                time: point.time,
+                price: point.price,
+                text: text,
+                series: markerSeries,
+                id: Date.now()
+            };
+        }
+        
+        function createTextPreview(point) {
+            // Создаем превью текстового маркера
+            const markerSeries = chart.addLineSeries({
+                color: '#ffffff',
+                lineWidth: 0,
+                lastValueVisible: false,
+                priceLineVisible: false
+            });
+            
+            // Добавляем данные в серию
+            markerSeries.setData([
+                { time: point.time, value: point.price }
+            ]);
+            
+            const markers = [{
+                time: point.time,
+                position: 'aboveBar',
+                color: '#ffffff',
+                shape: 'circle',
+                text: 'Текст',
+                size: 1
+            }];
+            
+            markerSeries.setMarkers(markers);
+            drawingState.previewElement = markerSeries;
+        }
+        
+        // === Функции управления элементами ===
+        function selectElement(element) {
+            drawingState.selectedElement = element;
+            
+            // Визуально выделяем выбранный элемент
+            drawingElements.forEach(el => {
+                if (el.series) {
+                    if (el.type === 'text') {
+                        // Для текста меняем цвет маркера
+                        const markers = el === element ? 
+                            [{ time: el.time, position: 'aboveBar', color: '#ffeb3b', shape: 'circle', text: el.text, size: 1 }] :
+                            [{ time: el.time, position: 'aboveBar', color: '#ffffff', shape: 'circle', text: el.text, size: 1 }];
+                        el.series.setMarkers(markers);
+                    } else {
+                        el.series.applyOptions({ lineWidth: el === element ? 4 : 2 });
+                    }
+                }
+                if (el.priceLine) {
+                    el.priceLine.applyOptions({ 
+                        lineWidth: el === element ? 4 : 2,
+                        color: el === element ? '#ffeb3b' : '#26a69a'
+                    });
+                }
+            });
+            
+            console.log('Выбран элемент:', element);
+        }
+        
+        function deleteElement(element) {
+            if (!element) return;
+            
+            const index = drawingElements.indexOf(element);
+            if (index > -1) {
+                drawingElements.splice(index, 1);
+            }
+            
+            if (element.series) {
+                    if (Array.isArray(element.series)) {
+                        element.series.forEach(series => {
+                            if (series && typeof series.remove === 'function') {
+                                series.remove();
+                            }
+                        });
+                    } else {
+                        if (typeof element.series.remove === 'function') {
+                            element.series.remove();
+                        }
+                    }
+                }
+            if (element.priceLine) {
+                if (typeof element.priceLine.remove === 'function') {
+                    element.priceLine.remove();
+                }
+            }
+            if (element.marker) {
+                candlestick.setMarkers([]);
+            }
+            
+            // Если удаляемый элемент был выбран, снимаем выделение
+            if (drawingState.selectedElement === element) {
+                drawingState.selectedElement = null;
+            }
+            
+            console.log('Элемент удален:', element.type);
+        }
+        
+        function deleteSelectedElement() {
+            if (drawingState.selectedElement) {
+                deleteElement(drawingState.selectedElement);
+            }
+        }
+        
+        function findElementAtPoint(time, point) {
+            if (!time || !point) return null;
+            
+            // Простая проверка - ищем ближайший элемент
+            for (let element of drawingElements) {
+                if (isPointNearElement(element, time, point)) {
+                    return element;
+                }
+            }
+            return null;
+        }
+        
+        function isPointNearElement(element, time, point) {
+            if (!element) return false;
+            
+            const tolerance = 20; // Пиксели для определения близости
+            
+            switch (element.type) {
+                case 'horizontal':
+                    const price = getPriceFromPoint(point);
+                    return Math.abs(price - element.price) < tolerance;
+                    
+                case 'vertical':
+                    return Math.abs(time - element.time) < tolerance;
+                    
+                case 'text':
+                    // Для текста проверяем близость к точке времени и цены
+                    const textPrice = getPriceFromPoint(point);
+                    const timeDiff = Math.abs(time - element.time);
+                    const priceDiff = Math.abs(textPrice - element.price);
+                    // Увеличиваем tolerance для текста, так как его сложнее кликнуть
+                    return timeDiff < tolerance * 2 && priceDiff < tolerance * 2;
+                    
+                case 'trend':
+                case 'arrow':
+                case 'rectangle':
+                    // Проверяем расстояние до линии
+                    const distance = distanceToLine(
+                        time, getPriceFromPoint(point),
+                        element.startTime, element.startPrice,
+                        element.endTime, element.endPrice
+                    );
+                    return distance < tolerance;
+                    
+                default:
+                    return false;
+            }
+        }
+        
+        function distanceToLine(x, y, x1, y1, x2, y2) {
+            const A = x - x1;
+            const B = y - y1;
+            const C = x2 - x1;
+            const D = y2 - y1;
+            
+            const dot = A * C + B * D;
+            const lenSq = C * C + D * D;
+            let param = -1;
+            
+            if (lenSq !== 0) param = dot / lenSq;
+            
+            let xx, yy;
+            if (param < 0) {
+                xx = x1;
+                yy = y1;
+            } else if (param > 1) {
+                xx = x2;
+                yy = y2;
+            } else {
+                xx = x1 + param * C;
+                yy = y1 + param * D;
+            }
+            
+            const dx = x - xx;
+            const dy = y - yy;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+        
+        function getPriceFromPoint(point) {
+            if (!point) return 0;
+            
+            // Fallback: используем данные для расчета
+            const data = chartData[currentTimeframe];
+            if (data && data.length > 0) {
+                const maxPrice = Math.max(...data.map(d => d.high));
+                const minPrice = Math.min(...data.map(d => d.low));
+                const chartHeight = chart.clientHeight;
+                const pricePerPixel = (maxPrice - minPrice) / chartHeight;
+                return maxPrice - (point.y * pricePerPixel);
+            }
+            return 0;
+        }
+        
+        function clearAllDrawings() {
+            // Удаляем все элементы рисования
+            drawingElements.forEach(element => {
+                deleteElement(element);
+            });
+            
+            drawingElements = [];
+            drawingState.selectedElement = null;
+            clearPreview();
+            
+            console.log('Все элементы удалены');
+        }
+        
+        // === Функции управления таймфреймами ===
+        function switchTimeframe(timeframe) {
+            currentTimeframe = timeframe;
+            
+            // Обновляем активную кнопку
+            document.querySelectorAll('.timeframe-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Обновляем отображение
+            document.getElementById('timeframe-display').textContent = timeframe.toUpperCase();
+            
+            // Обновляем данные графика
+            const data = chartData[timeframe];
+            if (data && data.length > 0) {
+                candlestick.setData(data);
+                const volumeData = data.map(item => ({
+                    time: item.time,
+                    value: item.volume,
+                    color: item.close >= item.open ? '#26a69a' : '#ef5350'
+                }));
+                volume.setData(volumeData);
+                document.getElementById('candles-count').textContent = data.length;
+            }
+            
+            // Подгоняем содержимое
+            chart.timeScale().fitContent();
+            volumeChart.timeScale().fitContent();
+        }
+
+        // === Инициализация графиков ===
+        function initCharts() {
+            // Создаем основной график
+            chart = LightweightCharts.createChart(document.getElementById('chart'), {
+                width: document.getElementById('chart').clientWidth,
+                height: document.getElementById('chart').clientHeight,
+                layout: {
+                    background: {
+                        type: 'solid',
+                        color: '#1e222d',
+                    },
+                    textColor: '#d1d4dc',
+                },
+                grid: {
+                    vertLines: {
+                        color: '#2B2B43',
+                    },
+                    horzLines: {
+                        color: '#2B2B43',
+                    },
+                },
+                crosshair: {
+                    mode: LightweightCharts.CrosshairMode.Normal,
+                },
+                rightPriceScale: {
+                    borderColor: '#2B2B43',
+                },
+                timeScale: {
+                    borderColor: '#2B2B43',
+                    timeVisible: true,
+                    secondsVisible: false,
+                },
+            });
+
+            // Создаем график объема
+            volumeChart = LightweightCharts.createChart(document.getElementById('volume-chart'), {
+                width: document.getElementById('volume-chart').clientWidth,
+                height: document.getElementById('volume-chart').clientHeight,
+                layout: {
+                    background: {
+                        type: 'solid',
+                        color: '#131722',
+                    },
+                    textColor: '#d1d4dc',
+                },
+                grid: {
+                    vertLines: {
+                        color: '#2B2B43',
+                    },
+                    horzLines: {
+                        color: '#2B2B43',
+                    },
+                },
+                rightPriceScale: {
+                    borderColor: '#2B2B43',
+                    scaleMargins: {
+                        top: 0.1,
+                        bottom: 0.1,
+                    },
+                },
+                timeScale: {
+                    borderColor: '#2B2B43',
+                    timeVisible: true,
+                    secondsVisible: false,
+                },
+            });
+
+            // Добавляем свечной график
+            candlestick = chart.addCandlestickSeries({
+                upColor: '#26a69a',
+                downColor: '#ef5350',
+                borderDownColor: '#ef5350',
+                borderUpColor: '#26a69a',
+                wickDownColor: '#ef5350',
+                wickUpColor: '#26a69a',
+            });
+
+            // Добавляем объем
+            volume = volumeChart.addHistogramSeries({
+                color: '#26a69a',
+                priceFormat: {
+                    type: 'volume',
+                },
+            });
+
+            // Загружаем данные для текущего таймфрейма
+            const data = chartData[currentTimeframe];
+            if (data && data.length > 0) {
+                candlestick.setData(data);
+                const volumeData = data.map(item => ({
+                    time: item.time,
+                    value: item.volume,
+                    color: item.close >= item.open ? '#26a69a' : '#ef5350'
+                }));
+                volume.setData(volumeData);
+                document.getElementById('candles-count').textContent = data.length;
+            }
+
+            // Подписываемся на изменения цены
+            chart.subscribeCrosshairMove(param => {
+                if (param.time && param.seriesData.size > 0) {
+                    const price = param.seriesData.get(candlestick);
+                    if (price) {
+                        document.getElementById('chart-price').textContent = `$${price.close.toFixed(2)}`;
+                    }
+                }
+            });
+
+            // Синхронизируем временные шкалы
+            chart.timeScale().subscribeVisibleTimeRangeChange(() => {
+                const timeRange = chart.timeScale().getVisibleRange();
+                if (timeRange) {
+                    volumeChart.timeScale().setVisibleRange(timeRange);
+                }
+            });
+
+            // === ЕДИНСТВЕННЫЙ обработчик клика ===
+            chart.subscribeClick(param => {
+                    handleChartClick(param);
+            });
+            
+            // === Обработчик движения мыши для превью и перетаскивания ===
+            chart.subscribeCrosshairMove(param => {
+                handleChartMouseMove(param);
+                if (isDragging && drawingState.selectedElement) {
+                    handleDrag(param);
+                }
+            });
+            
+            // === Обработчик отпускания мыши ===
+            document.addEventListener('mouseup', () => {
+                stopDragging();
+            });
+
+            // Подгоняем содержимое
+            chart.timeScale().fitContent();
+            volumeChart.timeScale().fitContent();
+        }
+        
+        // === Обработчики клавиатуры ===
+        document.addEventListener('keydown', (event) => {
+            switch (event.key) {
+                case 'Delete':
+                case 'Backspace':
+                    deleteSelectedElement();
+                    break;
+                case 'Escape':
+                    setDrawingTool(null);
+                    selectElement(null);
+                    break;
+                case 'h':
+                case 'H':
+                    setDrawingTool('horizontal');
+                    break;
+                case 'v':
+                case 'V':
+                    setDrawingTool('vertical');
+                    break;
+                case 't':
+                case 'T':
+                    setDrawingTool('trend');
+                    break;
+                case 'a':
+                case 'A':
+                    setDrawingTool('arrow');
+                    break;
+                case 'r':
+                case 'R':
+                    setDrawingTool('rectangle');
+                    break;
+            }
+        });
+
+        // === Обработка изменения размера окна ===
+        window.addEventListener('resize', () => {
+            if (chart) {
+                chart.applyOptions({
+                    width: document.getElementById('chart').clientWidth,
+                    height: document.getElementById('chart').clientHeight
+                });
+            }
+            if (volumeChart) {
+                volumeChart.applyOptions({
+                    width: document.getElementById('volume-chart').clientWidth,
+                    height: document.getElementById('volume-chart').clientHeight
+                });
+            }
+        });
+
+        // === Инициализация при загрузке страницы ===
+        document.addEventListener('DOMContentLoaded', () => {
+            loadInitialCandles();
+        });
+
+        // После загрузки chartData и инициализации графика:
+        document.addEventListener('DOMContentLoaded', function() {
+            // Для каждого таймфрейма выводим количество свечей и время первой/последней
+            Object.keys(chartData).forEach(tf => {
+                if (chartData[tf] && chartData[tf].length > 0) {
+                    const first = chartData[tf][0];
+                    const last = chartData[tf][chartData[tf].length-1];
+                    console.log(`Таймфрейм ${tf}: ${chartData[tf].length} свечей`);
+                    console.log(`  Первая: ${new Date(first.time*1000).toLocaleString()} (${first.time})`);
+                    console.log(`  Последняя: ${new Date(last.time*1000).toLocaleString()} (${last.time})`);
+                }
+            });
+            // Кнопка для показа всех свечей
+            const btn = document.createElement('button');
+            btn.textContent = 'Показать все свечи';
+            btn.style.position = 'fixed';
+            btn.style.top = '10px';
+            btn.style.right = '10px';
+            btn.style.zIndex = 1000;
+            btn.onclick = function() {
+                if (typeof chart !== 'undefined' && chart.timeScale) {
+                    chart.timeScale().fitContent();
+                }
+                if (typeof volumeChart !== 'undefined' && volumeChart.timeScale) {
+                    volumeChart.timeScale().fitContent();
+                }
+            };
+            document.body.appendChild(btn);
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Диагностика: выводим диапазон данных для каждого таймфрейма
+            Object.keys(chartData).forEach(tf => {
+                if (chartData[tf] && chartData[tf].length > 0) {
+                    const first = chartData[tf][0];
+                    const last = chartData[tf][chartData[tf].length-1];
+                    console.log(`[DIAG] chartData[${tf}]: ${chartData[tf].length} свечей`);
+                    console.log(`[DIAG] chartData[${tf}] первая:`, first);
+                    console.log(`[DIAG] chartData[${tf}] последняя:`, last);
+                }
+            });
+            // Кнопка для показа диапазона данных
+            const btn = document.createElement('button');
+            btn.textContent = 'Диапазон данных';
+            btn.style.position = 'fixed';
+            btn.style.top = '50px';
+            btn.style.right = '10px';
+            btn.style.zIndex = 1000;
+            btn.onclick = function() {
+                const tf = currentTimeframe;
+                if (chartData[tf] && chartData[tf].length > 0) {
+                    const first = chartData[tf][0];
+                    const last = chartData[tf][chartData[tf].length-1];
+                    alert(`Таймфрейм: ${tf}\nСвечей: ${chartData[tf].length}\nПервая: ${new Date(first.time*1000).toLocaleString()}\nПоследняя: ${new Date(last.time*1000).toLocaleString()}`);
+                } else {
+                    alert('Нет данных для текущего таймфрейма');
+                }
+            };
+            document.body.appendChild(btn);
+        });
+    </script>
+</body>
+</html> 

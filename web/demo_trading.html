@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OwnedCore • Демо-торговля</title>
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <style>
+        :root {
+            --bg-main: #05070f;
+            --bg-secondary: rgba(5, 7, 15, 0.85);
+            --bg-tertiary: rgba(12, 16, 32, 0.65);
+            --text-primary: #f8f8f8;
+            --text-secondary: #a0aec0;
+            --accent-primary: #00ff99;
+            --accent-secondary: #ff0080;
+            --danger: #ff3860;
+            --success: #00ff99;
+            --warning: #ffbe0b;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --card-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
+            --transition: all 0.25s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Montserrat', 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #03040a 0%, #080c1b 50%, #05070f 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            padding: 1.5rem 3rem;
+            border-bottom: 1px solid var(--border-color);
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(4, 8, 20, 0.9));
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .header-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2rem;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-container h1 {
+            font-size: 1.8rem;
+            letter-spacing: 2px;
+            margin: 0;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .nav-item {
+            padding: 0.5rem 1rem;
+            text-decoration: none;
+            color: var(--text-primary);
+            border: 1px solid transparent;
+            transition: var(--transition);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.85rem;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+            box-shadow: 0 0 20px rgba(0, 255, 153, 0.4);
+        }
+
+        main {
+            flex: 1;
+            padding: 2rem 3rem 3rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .card {
+            background: rgba(7, 10, 22, 0.95);
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            border-radius: 18px;
+            box-shadow: var(--card-shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card h3 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            font-size: 0.95rem;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.35rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            gap: 0.35rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-pill.ok {
+            background: rgba(0, 255, 153, 0.15);
+            color: var(--success);
+        }
+
+        .status-pill.error {
+            background: rgba(255, 56, 96, 0.2);
+            color: var(--danger);
+        }
+
+        .metrics {
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        .metric-value {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .btn {
+            border: none;
+            cursor: pointer;
+            background: var(--accent-primary);
+            color: #000;
+            padding: 0.65rem 1.25rem;
+            border-radius: 999px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: var(--transition);
+        }
+
+        .btn:hover {
+            box-shadow: 0 0 25px rgba(0, 255, 153, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .live-toggle-btn {
+            border: 2px solid var(--accent-warning);
+            background: transparent;
+            color: var(--accent-warning);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 0.5rem 1.25rem;
+            border-radius: 999px;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+
+        .live-toggle-btn.live-on {
+            border-color: var(--success);
+            color: var(--success);
+            box-shadow: 0 0 15px rgba(0, 255, 153, 0.4);
+        }
+
+        .live-toggle-btn.live-off {
+            border-color: var(--danger);
+            color: var(--danger);
+            box-shadow: 0 0 15px rgba(255, 56, 96, 0.4);
+        }
+
+        .live-toggle-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            margin-bottom: 1rem;
+        }
+
+        label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input, select {
+            background: rgba(10, 13, 24, 0.9);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.65rem 0.85rem;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            transition: var(--transition);
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(0, 255, 153, 0.2);
+        }
+
+        .form-inline {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+        }
+
+        .notice {
+            padding: 1rem;
+            border-radius: 12px;
+            background: rgba(255, 190, 11, 0.12);
+            color: var(--warning);
+            border: 1px solid rgba(255, 190, 11, 0.35);
+            margin-bottom: 1.5rem;
+        }
+
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <div class="logo-container">
+                <div class="logo">
+                    <svg viewBox="0 0 100 100" width="52" height="52">
+                        <defs>
+                            <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#00ff99"/>
+                                <stop offset="100%" stop-color="#ff00ff"/>
+                            </linearGradient>
+                            <filter id="glow">
+                                <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        <circle cx="50" cy="50" r="45" stroke="url(#logoGradient)" stroke-width="2" fill="none" filter="url(#glow)"/>
+                        <path d="M30 70 L70 30 M30 30 L70 70" stroke="url(#logoGradient)" stroke-width="2" filter="url(#glow)"/>
+                    </svg>
+                </div>
+                <h1>OwnedCore</h1>
+            </div>
+        <nav class="nav-menu">
+            <a href="/dashboard" class="nav-item" id="nav-dashboard">Дашборд</a>
+            <a href="/charts" class="nav-item" id="nav-charts">Графики</a>
+            <a href="/signals" class="nav-item" id="nav-signals">Сигналы</a>
+            <a href="/potential-signals" class="nav-item" id="nav-potential">ES</a>
+            <a href="/demo-trading" class="nav-item active" id="nav-demo">Демо-торговля</a>
+            <button id="live-trading-toggle" class="live-toggle-btn live-on" onclick="toggleLiveTrading(event)">
+                LIVE: ВКЛ
+            </button>
+        </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="notice" id="demo-notice">
+            ⚠️ Live-торговля использует реальные средства. Вы можете в любой момент отключить её через переключатель в шапке.
+        </div>
+
+        <section class="grid" id="status-grid">
+            <div class="card" id="connection-card">
+                <h3>Статус подключения</h3>
+                <div class="metrics">
+                    <div class="metric-row">
+                        <span>Демо режим</span>
+                        <span class="metric-value" id="demo-mode">—</span>
+                    </div>
+                    <div class="metric-row">
+                        <span>API ключи</span>
+                        <span class="metric-value" id="api-status">—</span>
+                    </div>
+                    <div class="metric-row">
+                        <span>Подключение</span>
+                        <span class="metric-value" id="connection-status">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" id="account-card">
+                <h3>Баланс</h3>
+                <div class="metrics">
+                    <div class="metric-row">
+                        <span>Всего USDT</span>
+                        <span class="metric-value" id="balance-total">—</span>
+                    </div>
+                    <div class="metric-row">
+                        <span>Доступно</span>
+                        <span class="metric-value" id="balance-free">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" id="summary-card">
+                <h3>Быстрые действия</h3>
+                <p style="color: var(--text-secondary); margin-top: 0;">
+                    Создайте демо-ордер, используя форму справа. Для закрытия позиции выберите «reduce only».
+                </p>
+                <button class="btn" id="refresh-btn" onclick="loadStatus()">Обновить статус</button>
+            </div>
+        </section>
+
+        <section class="grid">
+            <div class="card">
+                <h3>Открытые позиции</h3>
+                <div id="positions-empty" style="display:none; color: var(--text-secondary);">Нет открытых позиций.</div>
+                <div class="table-wrapper">
+                    <table id="positions-table">
+                        <thead>
+                            <tr>
+                                <th>Пара</th>
+                                <th>Сторона</th>
+                                <th>Контракты</th>
+                                <th>Цена входа</th>
+                                <th>Mark</th>
+                                <th>Нереал. PnL</th>
+                                <th>Действие</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Открытые ордера</h3>
+                <div id="orders-empty" style="display:none; color: var(--text-secondary);">Нет активных ордеров.</div>
+                <div class="table-wrapper">
+                    <table id="orders-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Пара</th>
+                                <th>Тип</th>
+                                <th>Сторона</th>
+                                <th>Цена</th>
+                                <th>Объём</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section class="grid">
+            <div class="card" style="grid-column: span 2;">
+                <h3>Создать ордер</h3>
+                <form id="order-form">
+                    <div class="form-inline">
+                        <div class="form-group">
+                            <label for="symbol">Пара</label>
+                            <select id="symbol" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="side">Сторона</label>
+                            <select id="side">
+                                <option value="buy">LONG (Buy)</option>
+                                <option value="sell">SHORT (Sell)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="order-type">Тип ордера</label>
+                            <select id="order-type">
+                                <option value="limit">Лимитный</option>
+                                <option value="market">Рыночный</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-inline">
+                        <div class="form-group">
+                            <label for="amount">Количество</label>
+                            <input type="number" id="amount" placeholder="0.01" step="0.001" min="0.0001" required>
+                        </div>
+                        <div class="form-group" id="price-group">
+                            <label for="price">Цена (для лимитных)</label>
+                            <input type="number" id="price" placeholder="Например 27000" step="0.5" min="0">
+                        </div>
+                        <div class="form-group" style="align-self: flex-end;">
+                            <label style="display:flex; align-items:center; gap:0.35rem;">
+                                <input type="checkbox" id="reduce-only" style="width:auto;"> Только закрытие (reduce only)
+                            </label>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn">Разместить ордер</button>
+                </form>
+                <div id="order-message" style="margin-top:1rem; font-size:0.9rem;"></div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // ИСКЛЮЧЕНЫ: FTM/USDT, MKR/USDT (недоступны на Bybit)
+        const TRADING_PAIRS = [
+            "BTC/USDT","ETH/USDT","SOL/USDT","BNB/USDT","ADA/USDT","XRP/USDT","DOT/USDT","AVAX/USDT",
+            "LINK/USDT","UNI/USDT","ATOM/USDT","LTC/USDT","BCH/USDT","ETC/USDT","FIL/USDT","NEAR/USDT",
+            "ALGO/USDT","VET/USDT","ICP/USDT","THETA/USDT","XLM/USDT","TRX/USDT","AAVE/USDT",
+            "SUSHI/USDT","COMP/USDT","SNX/USDT","APT/USDT","OP/USDT"
+        ];
+
+        let liveTradingEnabled = true;
+
+        function updateLiveTradingToggleButton() {
+            const btn = document.getElementById('live-trading-toggle');
+            if (!btn) return;
+            btn.classList.toggle('live-on', liveTradingEnabled);
+            btn.classList.toggle('live-off', !liveTradingEnabled);
+            btn.textContent = liveTradingEnabled ? 'LIVE: ВКЛ' : 'LIVE: ВЫКЛ';
+        }
+
+        async function fetchLiveTradingStatus() {
+            try {
+                const response = await fetch('/api/trading/live/status');
+                const data = await response.json();
+                if (typeof data.enabled === 'boolean') {
+                    liveTradingEnabled = data.enabled;
+                    updateLiveTradingToggleButton();
+                }
+            } catch (error) {
+                console.warn('Не удалось получить статус live-торговли:', error);
+            }
+        }
+
+        async function toggleLiveTrading(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            try {
+                const response = await fetch('/api/trading/live/status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled: !liveTradingEnabled })
+                });
+                const data = await response.json();
+                if (typeof data.enabled === 'boolean') {
+                    liveTradingEnabled = data.enabled;
+                    updateLiveTradingToggleButton();
+                    loadStatus();
+                }
+            } catch (error) {
+                console.error('Не удалось переключить live-режим:', error);
+            }
+        }
+
+        const symbolSelect = document.getElementById('symbol');
+        const orderForm = document.getElementById('order-form');
+        const orderMessage = document.getElementById('order-message');
+        const ordersTableBody = document.querySelector('#orders-table tbody');
+        const positionsTableBody = document.querySelector('#positions-table tbody');
+        const ordersEmpty = document.getElementById('orders-empty');
+        const positionsEmpty = document.getElementById('positions-empty');
+        const demoNotice = document.getElementById('demo-notice');
+
+        TRADING_PAIRS.forEach(pair => {
+            const option = document.createElement('option');
+            option.value = pair;
+            option.textContent = pair;
+            symbolSelect.appendChild(option);
+        });
+
+        async function loadStatus() {
+            try {
+                const response = await fetch('/api/demo-trading/status');
+                const data = await response.json();
+
+                if (typeof data.live_trading_enabled === 'boolean') {
+                    liveTradingEnabled = data.live_trading_enabled;
+                    updateLiveTradingToggleButton();
+                }
+
+                document.getElementById('demo-mode').textContent = settingsInfo(data.enabled ? "Активен" : "Отключен");
+                document.getElementById('api-status').textContent = data.enabled ? "Ключи загружены" : "Не настроено";
+                document.getElementById('connection-status').innerHTML = connectionBadge(data.connected);
+
+                if (!data.enabled) {
+                    demoNotice.textContent = '⚠️ API-ключи не настроены. Торговля недоступна.';
+                    demoNotice.style.display = 'block';
+                    orderForm.querySelector('button[type="submit"]').disabled = true;
+                    return;
+                }
+
+                if (!liveTradingEnabled) {
+                    demoNotice.textContent = '⚠️ Live-торговля отключена. Включите режим, чтобы отправлять ордера.';
+                    demoNotice.style.display = 'block';
+                    orderForm.querySelector('button[type="submit"]').disabled = true;
+                    return;
+                }
+
+                demoNotice.style.display = 'none';
+                orderForm.querySelector('button[type="submit"]').disabled = false;
+
+                if (data.account) {
+                    document.getElementById('balance-total').textContent = `${data.account.total_usdt.toFixed(2)} USDT`;
+                    document.getElementById('balance-free').textContent = `${data.account.free_usdt.toFixed(2)} USDT`;
+                }
+
+                renderPositions(data.positions || []);
+                renderOrders(data.orders || []);
+            } catch (error) {
+                console.error('Ошибка загрузки статуса демо-торговли:', error);
+                orderMessage.textContent = `Ошибка статуса: ${error.message || error}`;
+                orderMessage.style.color = 'var(--danger)';
+            }
+        }
+
+        function settingsInfo(text) {
+            return text;
+        }
+
+        function connectionBadge(connected) {
+            return connected
+                ? '<span class="status-pill ok">ON</span>'
+                : '<span class="status-pill error">OFF</span>';
+        }
+
+        function renderPositions(positions) {
+            positionsTableBody.innerHTML = '';
+            if (!positions.length) {
+                positionsEmpty.style.display = 'block';
+                return;
+            }
+
+            positionsEmpty.style.display = 'none';
+            positions.forEach(pos => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${pos.symbol}</td>
+                    <td>${pos.side || '—'}</td>
+                    <td>${pos.contracts.toFixed(3)}</td>
+                    <td>${pos.entry_price?.toFixed(2) || '—'}</td>
+                    <td>${pos.mark_price?.toFixed(2) || '—'}</td>
+                    <td style="color:${pos.unrealized_pnl >= 0 ? 'var(--success)' : 'var(--danger)'};">
+                        ${pos.unrealized_pnl.toFixed(2)}
+                    </td>
+                    <td>
+                        <button class="btn btn-danger" onclick="closePosition('${pos.symbol}', ${pos.side ? `'${pos.side}'` : 'null'})" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                            Закрыть
+                        </button>
+                    </td>
+                `;
+                positionsTableBody.appendChild(row);
+            });
+        }
+
+        function renderOrders(orders) {
+            ordersTableBody.innerHTML = '';
+            if (!orders.length) {
+                ordersEmpty.style.display = 'block';
+                return;
+            }
+
+            ordersEmpty.style.display = 'none';
+            orders.forEach(order => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${order.id}</td>
+                    <td>${order.symbol}</td>
+                    <td>${order.type}</td>
+                    <td>${order.side}</td>
+                    <td>${order.price?.toFixed(2) || '—'}</td>
+                    <td>${order.amount}</td>
+                    <td>
+                        <button class="btn btn-danger" onclick="cancelOrder('${order.id}', '${order.symbol}')">Отменить</button>
+                    </td>
+                `;
+                ordersTableBody.appendChild(row);
+            });
+        }
+
+        orderForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            orderMessage.textContent = '';
+            const payload = {
+                symbol: document.getElementById('symbol').value,
+                side: document.getElementById('side').value,
+                order_type: document.getElementById('order-type').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                price: document.getElementById('order-type').value === 'limit'
+                    ? parseFloat(document.getElementById('price').value)
+                    : null,
+                reduce_only: document.getElementById('reduce-only').checked
+            };
+
+            try {
+                const response = await fetch('/api/demo-trading/order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || data.error || 'Не удалось создать ордер');
+                }
+
+                orderMessage.textContent = `Ордер создан: ${data.order.id}`;
+                orderMessage.style.color = 'var(--success)';
+                orderForm.reset();
+                loadStatus();
+            } catch (error) {
+                orderMessage.textContent = `Ошибка: ${error.message}`;
+                orderMessage.style.color = 'var(--danger)';
+            }
+        });
+
+        async function cancelOrder(orderId, symbol) {
+            try {
+                const response = await fetch('/api/demo-trading/order/cancel', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ order_id: orderId, symbol })
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.detail || data.error || 'Не удалось отменить ордер');
+                }
+                orderMessage.textContent = `Ордер ${orderId} отменен`;
+                orderMessage.style.color = 'var(--success)';
+                loadStatus();
+            } catch (error) {
+                orderMessage.textContent = `Ошибка отмены: ${error.message}`;
+                orderMessage.style.color = 'var(--danger)';
+            }
+        }
+
+        async function closePosition(symbol, side) {
+            const sideText = side || '?';
+            if (!confirm(`Закрыть позицию ${symbol} ${sideText}? Позиция будет закрыта по текущей рыночной цене.`)) {
+                return;
+            }
+            
+            try {
+                orderMessage.textContent = 'Закрытие позиции...';
+                orderMessage.style.color = 'var(--text-secondary)';
+                
+                const payload = { symbol };
+                if (side && side !== 'null' && side !== 'undefined') {
+                    // Конвертируем Long/Short в buy/sell для API
+                    const sideLower = side.toLowerCase();
+                    if (sideLower === 'long') {
+                        payload.side = 'buy';  // Для закрытия LONG позиции нужен sell, но side указывает тип позиции
+                    } else if (sideLower === 'short') {
+                        payload.side = 'sell';  // Для закрытия SHORT позиции нужен buy, но side указывает тип позиции
+                    } else {
+                        payload.side = side;
+                    }
+                }
+                
+                const response = await fetch('/api/demo-trading/position/close', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.detail || data.error || 'Не удалось закрыть позицию');
+                }
+                
+                const pnlText = data.pnl !== undefined ? `${data.pnl >= 0 ? '+' : ''}${data.pnl.toFixed(2)}` : 'N/A';
+                const pnlColor = data.pnl >= 0 ? 'var(--success)' : 'var(--danger)';
+                orderMessage.innerHTML = `Позиция ${symbol} закрыта. PnL: <span style="color: ${pnlColor};">${pnlText}</span>`;
+                orderMessage.style.color = 'var(--text-primary)';
+                loadStatus();
+            } catch (error) {
+                orderMessage.textContent = `Ошибка закрытия позиции: ${error.message}`;
+                orderMessage.style.color = 'var(--danger)';
+            }
+        }
+
+        document.getElementById('order-type').addEventListener('change', (event) => {
+            document.getElementById('price-group').style.display = event.target.value === 'limit' ? 'block' : 'none';
+        });
+
+        fetchLiveTradingStatus();
+        loadStatus();
+        setInterval(loadStatus, 15000);
+    </script>
+</body>
+</html>
+
+

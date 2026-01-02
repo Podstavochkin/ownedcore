@@ -1,0 +1,2059 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>OwnedCore - Elder's Screen (ES)</title>
+    <style>
+        :root {
+            /* Основная цветовая схема - Dark Cyberpunk */
+            --bg-primary: #000000;
+            --bg-secondary: #0a0a0a;
+            --bg-tertiary: #111111;
+            --bg-card: rgba(0, 255, 65, 0.05);
+            --bg-modal: rgba(0, 0, 0, 0.98);
+            
+            /* Текст */
+            --text-primary: #00ff41;
+            --text-secondary: #00cc33;
+            --text-muted: #008822;
+            
+            /* Акцентные цвета - Cyberpunk Neon */
+            --accent-primary: #00ff41;
+            --accent-secondary: #ff006e;
+            --accent-success: #00ff41;
+            --accent-danger: #ff006e;
+            --accent-warning: #ffaa00;
+            --accent-info: #00d9ff;
+            
+            /* Градиенты - Cyberpunk */
+            --gradient-primary: linear-gradient(135deg, #00ff41 0%, #00cc33 50%, #ff006e 100%);
+            --gradient-success: linear-gradient(135deg, #00ff41 0%, #00cc33 100%);
+            --gradient-danger: linear-gradient(135deg, #ff006e 0%, #cc0055 100%);
+            --gradient-warning: linear-gradient(135deg, #ffaa00 0%, #ff8800 100%);
+            
+            /* Cyberpunk эффекты */
+            --glass-bg: rgba(0, 255, 65, 0.08);
+            --glass-border: rgba(0, 255, 65, 0.3);
+            --neon-glow: 0 0 10px rgba(0, 255, 65, 0.5), 0 0 20px rgba(0, 255, 65, 0.3), 0 0 30px rgba(0, 255, 65, 0.2);
+            --neon-glow-pink: 0 0 10px rgba(255, 0, 110, 0.5), 0 0 20px rgba(255, 0, 110, 0.3), 0 0 30px rgba(255, 0, 110, 0.2);
+            
+            /* Тени */
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04);
+            
+            /* Анимации */
+            --transition-fast: 0.15s ease-in-out;
+            --transition-normal: 0.3s ease-in-out;
+            --transition-slow: 0.5s ease-in-out;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Сканирующая линия */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ff41, transparent);
+            animation: scanLine 3s linear infinite;
+            z-index: 10000;
+            pointer-events: none;
+        }
+
+        @keyframes scanLine {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(100vh); opacity: 0; }
+        }
+
+        /* Цифровой шум на фоне */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 65, 0.03) 2px, rgba(0, 255, 65, 0.03) 4px),
+                repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0, 255, 65, 0.03) 2px, rgba(0, 255, 65, 0.03) 4px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Заголовок - Cyberpunk Style */
+        .header {
+            background: rgba(0, 0, 0, 0.9);
+            border-bottom: 2px solid var(--accent-primary);
+            padding: 1.5rem 2rem;
+            box-shadow: var(--neon-glow);
+            position: relative;
+            overflow: visible;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 65, 0.1), transparent);
+            animation: glitch 4s infinite;
+            z-index: 0;
+        }
+
+        @keyframes glitch {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-2px); }
+            50% { transform: translateX(2px); }
+            75% { transform: translateX(-1px); }
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: var(--accent-primary);
+            animation: scanHeader 2s infinite;
+            z-index: 1;
+            box-shadow: var(--neon-glow);
+        }
+
+        @keyframes scanHeader {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            position: relative;
+            animation: logoGlow 1.5s ease-in-out infinite alternate, glitchLogo 3s infinite;
+            filter: drop-shadow(var(--neon-glow));
+        }
+
+        @keyframes logoGlow {
+            0% { filter: drop-shadow(0 0 5px rgba(0, 255, 65, 0.5)); }
+            100% { filter: drop-shadow(0 0 20px rgba(0, 255, 65, 1)); }
+        }
+
+        @keyframes glitchLogo {
+            0%, 100% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+        }
+
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            text-shadow: var(--neon-glow);
+            letter-spacing: 2px;
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            animation: textGlitch 4s infinite;
+        }
+
+        @keyframes textGlitch {
+            0%, 100% { text-shadow: var(--neon-glow); }
+            25% { text-shadow: var(--neon-glow), 2px 0 0 rgba(255, 0, 110, 0.5); }
+            50% { text-shadow: var(--neon-glow), -2px 0 0 rgba(255, 0, 110, 0.5); }
+            75% { text-shadow: var(--neon-glow), 0 2px 0 rgba(255, 0, 110, 0.5); }
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            position: relative;
+            overflow: visible;
+        }
+
+        /* Навигационное меню */
+        .nav-menu {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex: 1;
+            justify-content: center;
+            position: relative;
+            overflow: visible;
+        }
+
+        .nav-item {
+            padding: 0.5rem 1rem;
+            text-decoration: none;
+            color: var(--text-primary);
+            border: 1px solid transparent;
+            transition: var(--transition-normal);
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            font-size: 0.875rem;
+            letter-spacing: 1px;
+        }
+
+        .nav-item:hover {
+            border-color: var(--accent-primary);
+            box-shadow: var(--neon-glow);
+            color: var(--accent-primary);
+        }
+
+        .nav-item.active {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+            box-shadow: var(--neon-glow);
+        }
+
+        /* Выпадающее меню дизайна */
+        .design-dropdown {
+            position: relative;
+            z-index: 10002;
+        }
+
+        .design-btn {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            color: var(--accent-primary);
+            border: 1px solid var(--accent-primary);
+            box-shadow: var(--neon-glow);
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            font-size: 0.875rem;
+            letter-spacing: 1px;
+            position: relative;
+        }
+
+        .design-btn::after {
+            content: ' ▼';
+            font-size: 0.7rem;
+        }
+
+        .design-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 0.5rem;
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid var(--accent-primary);
+            box-shadow: var(--neon-glow);
+            min-width: 200px;
+            display: none;
+            z-index: 10001;
+            overflow: visible;
+        }
+
+        /* Для космической темы используем fixed позиционирование */
+        body.theme-cosmic .design-menu {
+            position: fixed !important;
+            margin-top: 0;
+        }
+
+        .design-menu.active {
+            display: block;
+        }
+
+        .design-option {
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: var(--transition-normal);
+            border-bottom: 1px solid rgba(0, 255, 65, 0.2);
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+
+        .design-option:last-child {
+            border-bottom: none;
+        }
+
+        .design-option:hover {
+            background: rgba(0, 255, 65, 0.1);
+            color: var(--accent-primary);
+        }
+
+        .design-option.active {
+            background: rgba(0, 255, 65, 0.2);
+            color: var(--accent-primary);
+            box-shadow: inset 0 0 10px rgba(0, 255, 65, 0.3);
+        }
+
+        .live-toggle-btn {
+            padding: 0.5rem 1.25rem;
+            border: 2px solid var(--accent-warning);
+            background: transparent;
+            color: var(--accent-warning);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-family: 'Courier New', monospace;
+            box-shadow: 0 0 12px rgba(255, 170, 0, 0.4);
+            transition: var(--transition-normal);
+            cursor: pointer;
+        }
+
+        .live-toggle-btn.live-on {
+            border-color: var(--accent-success);
+            color: var(--accent-success);
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.5);
+        }
+
+        .live-toggle-btn.live-off {
+            border-color: var(--accent-danger);
+            color: var(--accent-danger);
+            box-shadow: 0 0 15px rgba(255, 0, 110, 0.5);
+        }
+
+        .live-toggle-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Основной контент */
+        .main-content {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Статистика */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 0;
+            padding: 1.5rem;
+            box-shadow: var(--neon-glow);
+            border: 2px solid var(--accent-primary);
+            transition: var(--transition-normal);
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--accent-primary);
+            box-shadow: var(--neon-glow);
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3px;
+            height: 100%;
+            background: var(--accent-primary);
+            box-shadow: var(--neon-glow);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--neon-glow), 0 0 40px rgba(0, 255, 65, 0.4);
+            border-color: var(--accent-primary);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .notifications {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid var(--accent-warning);
+            padding: 1rem;
+            margin-bottom: 2rem;
+            max-height: 200px;
+            overflow-y: auto;
+            box-shadow: var(--neon-glow);
+        }
+
+        .notifications h3 {
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .notification {
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-left: 3px solid var(--accent-warning);
+            background: rgba(255, 170, 0, 0.1);
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        .notification.ready {
+            border-left-color: var(--accent-success);
+            background: rgba(0, 255, 65, 0.1);
+        }
+
+        .levels-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .pair-group {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--text-secondary);
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            overflow: hidden;
+        }
+
+        .pair-group.has-ready {
+            border-color: var(--accent-success);
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
+        }
+
+        .pair-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .pair-group-header:hover {
+            background: rgba(0, 255, 65, 0.1);
+        }
+
+        .pair-group-header-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex: 1;
+        }
+
+        .pair-group-toggle {
+            font-size: 1.2rem;
+            color: var(--accent-success);
+            transition: transform 0.3s;
+            min-width: 20px;
+        }
+
+        .pair-group.expanded .pair-group-toggle {
+            transform: rotate(90deg);
+        }
+
+        .pair-group-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--accent-success);
+        }
+
+        .pair-group-stats {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .pair-group-levels {
+            display: none;
+            padding: 0.5rem 1rem 1rem 1rem;
+        }
+
+        .pair-group.expanded .pair-group-levels {
+            display: block;
+        }
+
+        .level-row {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto auto auto auto;
+            gap: 0.75rem;
+            align-items: center;
+            padding: 0.5rem 0.75rem;
+            margin-bottom: 0.25rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 3px solid var(--text-secondary);
+            border-radius: 0.25rem;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .level-row:hover {
+            background: rgba(0, 255, 65, 0.1);
+            border-left-color: var(--accent-success);
+        }
+
+        .level-row.ready {
+            border-left-color: var(--accent-success);
+            box-shadow: 0 0 5px rgba(0, 255, 65, 0.2);
+        }
+
+        .level-row.blocked {
+            border-left-color: var(--accent-danger);
+            opacity: 0.7;
+        }
+
+        .level-row.not-checked {
+            border-left-color: var(--text-secondary);
+            opacity: 0.5;
+        }
+
+        .level-status-icon {
+            font-size: 1rem;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .level-price {
+            font-weight: bold;
+            color: var(--accent-success);
+        }
+
+        .level-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .level-info-main {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .level-info-details {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            opacity: 0.8;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: normal;
+            line-height: 1.4;
+        }
+
+        .level-badges {
+            display: flex;
+            gap: 0.25rem;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 0.15rem 0.4rem;
+            background: rgba(0, 255, 65, 0.2);
+            border: 1px solid var(--accent-success);
+            font-size: 0.7rem;
+            border-radius: 0.2rem;
+        }
+
+        .badge.ready {
+            background: rgba(0, 255, 65, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .level-distance {
+            text-align: right;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        .level-screens-status {
+            display: flex;
+            gap: 0.25rem;
+            font-size: 0.7rem;
+        }
+
+        .screen-indicator {
+            padding: 0.1rem 0.3rem;
+            border-radius: 0.2rem;
+            font-weight: bold;
+        }
+
+        .screen-indicator.passed {
+            background: rgba(0, 255, 65, 0.2);
+            color: var(--accent-success);
+        }
+
+        .screen-indicator.blocked {
+            background: rgba(255, 0, 110, 0.2);
+            color: var(--accent-danger);
+        }
+
+        .screen-indicator.not-checked {
+            background: rgba(255, 170, 0, 0.2);
+            color: var(--accent-warning);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+            animation: pulse 2s infinite;
+        }
+
+        .loading::before {
+            content: '⏳ ';
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .refresh-btn {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            color: var(--accent-primary);
+            border: 2px solid var(--accent-primary);
+            box-shadow: var(--neon-glow);
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.875rem;
+            transition: var(--transition-normal);
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--neon-glow), 0 0 30px rgba(0, 255, 65, 0.6);
+            color: #ffffff;
+            text-shadow: 0 0 10px var(--accent-primary);
+        }
+
+        /* ============================================
+           СТИЛИ ТЕМ
+           ============================================ */
+
+        /* Классический стиль */
+        body.theme-classic {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body.theme-classic:root,
+        body.theme-classic {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #1a1f2e;
+            --bg-tertiary: #252a3a;
+            --bg-card: #1e2332;
+            --bg-modal: rgba(10, 14, 26, 0.95);
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --text-muted: #718096;
+            --accent-primary: #667eea;
+            --accent-secondary: #764ba2;
+            --accent-success: #48bb78;
+            --accent-danger: #f56565;
+            --accent-warning: #ed8936;
+            --accent-info: #4299e1;
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-success: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            --gradient-danger: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+            --gradient-warning: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+            --glass-bg: rgba(30, 35, 50, 0.6);
+            --glass-border: rgba(102, 126, 234, 0.3);
+            --neon-glow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            --neon-glow-pink: 0 4px 15px rgba(118, 75, 162, 0.3);
+        }
+
+        body.theme-classic::before,
+        body.theme-classic::after {
+            display: none;
+        }
+
+        body.theme-classic .header {
+            background: var(--gradient-primary);
+            border-bottom: none;
+            box-shadow: var(--shadow-lg);
+            overflow: visible;
+        }
+
+        body.theme-classic .header::before,
+        body.theme-classic .header::after {
+            display: none;
+        }
+
+        body.theme-classic .logo {
+            animation: none;
+            filter: none;
+        }
+
+        body.theme-classic .header h1 {
+            background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: none;
+            animation: none;
+        }
+
+        body.theme-classic .stat-card,
+        body.theme-classic .notifications,
+        body.theme-classic .pair-group {
+            background: var(--bg-card);
+            border-radius: 1rem;
+            border: 1px solid var(--bg-tertiary);
+            box-shadow: var(--shadow-md);
+        }
+
+        body.theme-classic .stat-card::before,
+        body.theme-classic .stat-card::after {
+            display: none;
+        }
+
+        body.theme-classic .nav-item,
+        body.theme-classic .design-btn {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-transform: none;
+            letter-spacing: normal;
+            border-radius: 0.5rem;
+        }
+
+        /* Космический стиль */
+        body.theme-cosmic {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body.theme-cosmic:root,
+        body.theme-cosmic {
+            --bg-primary: #0a0e27;
+            --bg-secondary: #14142e;
+            --bg-tertiary: #1a1a3e;
+            --bg-card: rgba(26, 26, 62, 0.6);
+            --bg-modal: rgba(10, 14, 39, 0.95);
+            --text-primary: #ffffff;
+            --text-secondary: #b8b8d4;
+            --text-muted: #6b6b8a;
+            --accent-primary: #6c5ce7;
+            --accent-secondary: #fdcb6e;
+            --accent-success: #00b894;
+            --accent-danger: #d63031;
+            --accent-warning: #fdcb6e;
+            --accent-info: #74b9ff;
+            --gradient-primary: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 50%, #fdcb6e 100%);
+            --gradient-success: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+            --gradient-danger: linear-gradient(135deg, #d63031 0%, #c0392b 100%);
+            --gradient-warning: linear-gradient(135deg, #fdcb6e 0%, #f39c12 100%);
+            --glass-bg: rgba(26, 26, 62, 0.4);
+            --glass-border: rgba(108, 92, 231, 0.3);
+            --neon-glow: 0 0 20px rgba(108, 92, 231, 0.4), 0 0 40px rgba(108, 92, 231, 0.2);
+            --neon-glow-pink: 0 0 20px rgba(253, 203, 110, 0.4), 0 0 40px rgba(253, 203, 110, 0.2);
+        }
+
+        body.theme-cosmic::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(2px 2px at 20% 30%, rgba(108, 92, 231, 0.3), transparent),
+                radial-gradient(2px 2px at 60% 70%, rgba(253, 203, 110, 0.2), transparent),
+                radial-gradient(1px 1px at 50% 50%, rgba(255, 255, 255, 0.1), transparent);
+            background-size: 200% 200%, 150% 150%, 100% 100%;
+            animation: starField 20s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes starField {
+            0% { background-position: 0% 0%, 0% 0%, 0% 0%; }
+            100% { background-position: 100% 100%, 50% 50%, 25% 25%; }
+        }
+
+        body.theme-cosmic::after {
+            display: none;
+        }
+
+        body.theme-cosmic .header {
+            background: rgba(10, 14, 39, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(108, 92, 231, 0.3);
+            box-shadow: 0 8px 32px rgba(108, 92, 231, 0.2);
+            overflow: visible;
+        }
+
+        body.theme-cosmic .header::before {
+            background: var(--gradient-primary);
+            opacity: 0.1;
+        }
+
+        body.theme-cosmic .header::after {
+            background: linear-gradient(90deg, transparent, rgba(108, 92, 231, 0.3), transparent);
+        }
+
+        body.theme-cosmic .logo {
+            animation: logoFloat 3s ease-in-out infinite;
+            filter: drop-shadow(0 0 15px rgba(108, 92, 231, 0.6));
+        }
+
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        body.theme-cosmic .header h1 {
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: none;
+            animation: none;
+        }
+
+        body.theme-cosmic .stat-card,
+        body.theme-cosmic .notifications,
+        body.theme-cosmic .pair-group {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px rgba(108, 92, 231, 0.2);
+        }
+
+        body.theme-cosmic .stat-card::before {
+            background: var(--gradient-primary);
+            height: 4px;
+            border-radius: 1rem 1rem 0 0;
+        }
+
+        body.theme-cosmic .stat-card::after {
+            display: none;
+        }
+
+        body.theme-cosmic .nav-item,
+        body.theme-cosmic .design-btn {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-transform: none;
+            letter-spacing: normal;
+        }
+
+        /* Специфичные стили для меню в космической теме */
+        body.theme-cosmic .header-content {
+            overflow: visible;
+            z-index: 10003;
+        }
+
+        body.theme-cosmic .header-controls {
+            overflow: visible;
+            z-index: 10003;
+        }
+
+        body.theme-cosmic .nav-menu {
+            overflow: visible;
+            z-index: 10003;
+        }
+
+        body.theme-cosmic .design-dropdown {
+            z-index: 10004;
+            overflow: visible;
+        }
+
+        body.theme-cosmic .design-menu {
+            z-index: 99999 !important;
+            overflow: visible !important;
+            position: fixed !important;
+        }
+
+        body.theme-cosmic .design-menu.active {
+            display: block !important;
+        }
+
+        /* Стили для меню, перемещенного в body для космической темы */
+        .cosmic-menu-portal {
+            position: fixed !important;
+            z-index: 99999 !important;
+            background: rgba(0, 0, 0, 0.95) !important;
+            border: 2px solid var(--accent-primary) !important;
+            box-shadow: var(--neon-glow) !important;
+            min-width: 200px !important;
+        }
+
+        /* Убеждаемся, что body и html не обрезают меню в космической теме */
+        body.theme-cosmic,
+        html.theme-cosmic {
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        body.theme-cosmic .main-content {
+            position: relative;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body class="theme-cyberpunk">
+    <!-- Заголовок -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-container">
+                <div class="logo">
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#00ff41;stop-opacity:1" />
+                                <stop offset="50%" style="stop-color:#00cc33;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#ff006e;stop-opacity:1" />
+                            </linearGradient>
+                            <filter id="glow">
+                                <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        <!-- Цифровой/матричный символ -->
+                        <rect x="20" y="20" width="60" height="60" fill="none" stroke="url(#logoGradient)" stroke-width="3" filter="url(#glow)"/>
+                        <rect x="30" y="30" width="40" height="40" fill="none" stroke="url(#logoGradient)" stroke-width="2" filter="url(#glow)"/>
+                        <line x1="20" y1="50" x2="30" y2="50" stroke="url(#logoGradient)" stroke-width="2" filter="url(#glow)"/>
+                        <line x1="70" y1="50" x2="80" y2="50" stroke="url(#logoGradient)" stroke-width="2" filter="url(#glow)"/>
+                        <line x1="50" y1="20" x2="50" y2="30" stroke="url(#logoGradient)" stroke-width="2" filter="url(#glow)"/>
+                        <line x1="50" y1="70" x2="50" y2="80" stroke="url(#logoGradient)" stroke-width="2" filter="url(#glow)"/>
+                        <circle cx="50" cy="50" r="5" fill="url(#logoGradient)" filter="url(#glow)"/>
+                        <!-- Цифровые линии -->
+                        <path d="M25 25 L35 35 M65 25 L75 35 M25 75 L35 65 M65 75 L75 65" stroke="url(#logoGradient)" stroke-width="1.5" opacity="0.7" filter="url(#glow)"/>
+                    </svg>
+                </div>
+                <h1>OwnedCore</h1>
+            </div>
+            <div class="header-controls">
+                <nav class="nav-menu">
+                    <a href="/dashboard" class="nav-item" id="nav-dashboard">Дашборд</a>
+                    <a href="/charts" class="nav-item" id="nav-charts">Графики</a>
+                    <a href="/signals" class="nav-item" id="nav-signals">Сигналы</a>
+                    <a href="/potential-signals" class="nav-item active" id="nav-potential">ES</a>
+                    <a href="/demo-trading" class="nav-item" id="nav-demo">Демо</a>
+                    <div class="design-dropdown">
+                        <button class="design-btn" onclick="toggleDesignMenu()">Дизайн</button>
+                        <div class="design-menu" id="design-menu">
+                            <div class="design-option" onclick="switchTheme('classic')" data-theme="classic">Классический</div>
+                            <div class="design-option active" onclick="switchTheme('cyberpunk')" data-theme="cyberpunk">Cyberpunk</div>
+                            <div class="design-option" onclick="switchTheme('cosmic')" data-theme="cosmic">Космический</div>
+                        </div>
+                    </div>
+                </nav>
+                <button id="live-trading-toggle" class="live-toggle-btn live-on" onclick="toggleLiveTrading(event)">
+                    LIVE: ВКЛ
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Основной контент -->
+    <main class="main-content">
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="total-levels">-</div>
+                <div class="stat-label">Всего уровней</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="ready-levels">-</div>
+                <div class="stat-label">Готовых к сигналу</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="blocked-screen1">-</div>
+                <div class="stat-label">Заблокировано Экран 1</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="blocked-screen2">-</div>
+                <div class="stat-label">Заблокировано Экран 2</div>
+            </div>
+        </div>
+
+        <div class="notifications" id="notifications">
+            <h3>Уведомления</h3>
+            <div id="notifications-list"></div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div style="color: var(--text-secondary); font-size: 0.9rem;">
+                <div id="last-update-time">Последнее обновление: загрузка...</div>
+                <div style="font-size: 0.8rem; opacity: 0.7; margin-top: 0.25rem;">Автообновление каждые 60 секунд</div>
+            </div>
+            <button class="refresh-btn" onclick="loadData()">🔄 Обновить</button>
+        </div>
+
+        <div class="levels-list" id="levels-list">
+            <div class="loading">Загрузка данных...</div>
+        </div>
+    </main>
+
+    <script>
+        // Определяем baseUrl более надежным способом
+        let baseUrl;
+        if (window.location.protocol === 'file:') {
+            // Если открыто через файловую систему, используем localhost:8000
+            baseUrl = 'http://localhost:8000';
+        } else {
+            // Если открыто через HTTP, используем текущий origin
+            baseUrl = window.location.origin;
+        }
+        console.log('🚀 Инициализация страницы potential-signals');
+        console.log('Base URL:', baseUrl);
+        console.log('Текущий URL:', window.location.href);
+        console.log('Протокол:', window.location.protocol);
+        let lastNotifications = [];
+        
+        // Сохраняем состояние раскрытых пар и скролла
+        let expandedPairs = new Set();
+        let savedScrollPosition = 0;
+
+        function saveState() {
+            // Сохраняем раскрытые пары
+            expandedPairs.clear();
+            document.querySelectorAll('.pair-group.expanded').forEach(group => {
+                const pair = group.dataset.pair;
+                if (pair) {
+                    expandedPairs.add(pair);
+                }
+            });
+            
+            // Сохраняем позицию скролла
+            savedScrollPosition = window.scrollY || document.documentElement.scrollTop;
+        }
+
+        function restoreState() {
+            // Восстанавливаем раскрытые пары
+            document.querySelectorAll('.pair-group').forEach(group => {
+                const pair = group.dataset.pair;
+                if (pair && expandedPairs.has(pair)) {
+                    group.classList.add('expanded');
+                }
+            });
+            
+            // Восстанавливаем позицию скролла
+            if (savedScrollPosition > 0) {
+                // Используем requestAnimationFrame для плавного восстановления
+                requestAnimationFrame(() => {
+                    window.scrollTo({
+                        top: savedScrollPosition,
+                        behavior: 'instant' // Мгновенно, без анимации
+                    });
+                });
+            }
+        }
+
+        function formatMoscowTime(date) {
+            const moscowDate = new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
+            const hours = moscowDate.getHours().toString().padStart(2, '0');
+            const minutes = moscowDate.getMinutes().toString().padStart(2, '0');
+            const seconds = moscowDate.getSeconds().toString().padStart(2, '0');
+            return `${hours}:${minutes}:${seconds}`;
+        }
+
+        function updateLastUpdateTime() {
+            const now = new Date();
+            const timeStr = formatMoscowTime(now);
+            const dateStr = now.toLocaleDateString('ru-RU', { 
+                timeZone: 'Europe/Moscow',
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+            document.getElementById('last-update-time').textContent = 
+                `Последнее обновление: ${dateStr} ${timeStr} МСК`;
+        }
+
+        // Константы для кэширования
+        const CACHE_KEY = 'potential_signals_cache';
+        const CACHE_TIMESTAMP_KEY = 'potential_signals_cache_timestamp';
+        const CACHE_TTL = 120000; // 2 минуты (120 секунд) - соответствует TTL на бэкенде
+
+        // Функция для получения данных из локального кэша
+        function getCachedData() {
+            try {
+                const cachedData = sessionStorage.getItem(CACHE_KEY);
+                const cachedTimestamp = sessionStorage.getItem(CACHE_TIMESTAMP_KEY);
+                
+                if (cachedData && cachedTimestamp) {
+                    const age = Date.now() - parseInt(cachedTimestamp, 10);
+                    if (age < CACHE_TTL) {
+                        console.log(`📦 Используем локальный кэш (возраст: ${Math.round(age / 1000)}с)`);
+                        return JSON.parse(cachedData);
+                    } else {
+                        console.log(`⏰ Локальный кэш устарел (возраст: ${Math.round(age / 1000)}с), требуется обновление`);
+                        // Удаляем устаревший кэш
+                        sessionStorage.removeItem(CACHE_KEY);
+                        sessionStorage.removeItem(CACHE_TIMESTAMP_KEY);
+                    }
+                }
+            } catch (e) {
+                console.warn('Ошибка чтения локального кэша:', e);
+            }
+            return null;
+        }
+
+        // Функция для сохранения данных в локальный кэш
+        function setCachedData(data) {
+            try {
+                sessionStorage.setItem(CACHE_KEY, JSON.stringify(data));
+                sessionStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+                console.log('💾 Данные сохранены в локальный кэш');
+            } catch (e) {
+                console.warn('Ошибка сохранения локального кэша:', e);
+                // Если sessionStorage переполнен, очищаем старые данные
+                if (e.name === 'QuotaExceededError') {
+                    console.warn('sessionStorage переполнен, очищаем старые данные');
+                    sessionStorage.clear();
+                }
+            }
+        }
+
+        async function loadData(forceRefresh = false) {
+            console.log('=== loadData() вызвана ===', forceRefresh ? '(принудительное обновление)' : '');
+            console.log('Base URL:', baseUrl);
+            console.log('Время вызова:', new Date().toISOString());
+            
+            // Сохраняем состояние перед обновлением
+            saveState();
+            
+            // Показываем индикатор загрузки только если данных еще нет
+            const container = document.getElementById('levels-list');
+            if (!container) {
+                console.error('Элемент levels-list не найден!');
+                return;
+            }
+            
+            const hasData = container.querySelector('.pair-group') !== null;
+            
+            // Проверяем локальный кэш, если не принудительное обновление
+            if (!forceRefresh && hasData) {
+                const cachedData = getCachedData();
+                if (cachedData) {
+                    const cachedTimestamp = parseInt(sessionStorage.getItem(CACHE_TIMESTAMP_KEY), 10);
+                    const age = Date.now() - cachedTimestamp;
+                    // Если кэш старше 50% TTL, обновляем данные (более агрессивное обновление)
+                    if (age < CACHE_TTL * 0.5) {
+                        console.log('✅ Используем данные из локального кэша (возраст:', Math.round(age / 1000), 'с)');
+                        // Отображаем кэшированные данные
+                        displayData(cachedData);
+                        // Обновляем время последнего обновления
+                        updateLastUpdateTime();
+                        return;
+                    } else {
+                        console.log('🔄 Кэш устарел (возраст:', Math.round(age / 1000), 'с), обновляем данные...');
+                        // Продолжаем загрузку новых данных
+                    }
+                }
+            }
+            
+            if (!hasData) {
+                container.innerHTML = '<div class="loading" style="padding: 2rem; text-align: center;">⏳ Загрузка данных...</div>';
+                
+                // Обновляем статистику на "-" во время загрузки только если данных нет
+                try {
+                    document.getElementById('total-levels').textContent = '-';
+                    document.getElementById('ready-levels').textContent = '-';
+                    document.getElementById('blocked-screen1').textContent = '-';
+                    document.getElementById('blocked-screen2').textContent = '-';
+                } catch (e) {
+                    console.error('Ошибка обновления статистики:', e);
+                }
+            }
+            
+            try {
+                const startTime = Date.now();
+                const url = `${baseUrl}/api/potential-signals`;
+                console.log('Отправка запроса на:', url);
+                
+                const response = await fetch(url);
+                console.log('Получен ответ:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok,
+                    headers: Object.fromEntries(response.headers.entries())
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                const loadTime = Date.now() - startTime;
+                console.log(`✅ Данные загружены за ${loadTime}ms`);
+                console.log(`📊 Статистика: Всего уровней: ${data.total_levels || 0}, Готовых: ${data.ready_for_signal || 0}`);
+                console.log('📦 Структура данных:', {
+                    has_levels: !!data.levels,
+                    has_levels_by_pair: !!data.levels_by_pair,
+                    levels_count: data.levels?.length || 0,
+                    pairs_count: data.levels_by_pair ? Object.keys(data.levels_by_pair).length : 0,
+                    total_levels: data.total_levels,
+                    ready_for_signal: data.ready_for_signal,
+                    blocked_screen_1: data.blocked_screen_1,
+                    blocked_screen_2: data.blocked_screen_2
+                });
+                
+                // Сохраняем в локальный кэш
+                setCachedData(data);
+                
+                // Отображаем данные
+                displayData(data);
+                
+                // Обновляем время последнего обновления
+                updateLastUpdateTime();
+
+            } catch (error) {
+                console.error('❌ ОШИБКА загрузки данных:', error);
+                console.error('Детали ошибки:', {
+                    name: error.name,
+                    message: error.message,
+                    stack: error.stack
+                });
+                
+                // Пытаемся использовать кэш при ошибке
+                const cachedData = getCachedData();
+                if (cachedData) {
+                    console.log('⚠️ Используем кэшированные данные из-за ошибки загрузки');
+                    displayData(cachedData);
+                    updateLastUpdateTime();
+                    return;
+                }
+                
+                let errorMessage = 'Ошибка загрузки данных';
+                if (error.message && error.message.includes('Failed to fetch')) {
+                    errorMessage = `Не удалось подключиться к серверу. Убедитесь, что API Gateway запущен на ${baseUrl}`;
+                } else if (error.message) {
+                    errorMessage = `Ошибка: ${error.message}`;
+                }
+                container.innerHTML = 
+                    `<div class="loading" style="color: var(--accent-danger); padding: 2rem; text-align: center;">
+                        <div style="margin-bottom: 1rem;">${errorMessage}</div>
+                        <div style="font-size: 0.9rem; color: var(--text-secondary);">Проверьте, что сервер запущен и доступен</div>
+                    </div>`;
+                updateLastUpdateTime(); // Обновляем время даже при ошибке
+            }
+        }
+
+        // Функция для отображения данных (вынесена отдельно для переиспользования)
+        function displayData(data) {
+            // Обновляем статистику
+            document.getElementById('total-levels').textContent = data.total_levels || 0;
+            document.getElementById('ready-levels').textContent = data.ready_for_signal || 0;
+            document.getElementById('blocked-screen1').textContent = data.blocked_screen_1 || 0;
+            document.getElementById('blocked-screen2').textContent = data.blocked_screen_2 || 0;
+
+            // Обновляем уведомления
+            updateNotifications(data);
+
+            // Отображаем уровни (используем levels_by_pair если доступен, иначе levels)
+            const container = document.getElementById('levels-list');
+            if (data.levels_by_pair && Object.keys(data.levels_by_pair).length > 0) {
+                console.log('✅ Используем levels_by_pair для отображения, пар:', Object.keys(data.levels_by_pair).length);
+                renderLevelsByPair(data.levels_by_pair);
+            } else if (data.levels && data.levels.length > 0) {
+                console.log('✅ Используем levels для отображения, уровней:', data.levels.length);
+                renderLevels(data.levels);
+            } else {
+                console.warn('⚠️ Нет данных для отображения');
+                container.innerHTML = '<div class="loading">Нет активных уровней</div>';
+            }
+
+            // Восстанавливаем состояние после обновления
+            restoreState();
+
+            // Обновляем время последнего обновления
+            updateLastUpdateTime();
+            console.log('✅ displayData() завершена успешно');
+        }
+
+        // Вспомогательная функция для определения статуса Screen 1
+        function getScreen1Status(level) {
+            const elderScreens = level.elder_screens || {};
+            const screen1 = elderScreens.screen_1 || {};
+            // Проверяем passed статус Screen 1
+            if (screen1.passed === true) {
+                return 'passed'; // 1✅
+            } else if (screen1.passed === false) {
+                return 'blocked'; // 1❌
+            } else {
+                return 'not-checked'; // 1⏳
+            }
+        }
+
+        function updateNotifications(data) {
+            const notificationsList = document.getElementById('notifications-list');
+            const newNotifications = [];
+
+            // Собираем все готовые уровни с успешным Screen 1 из levels_by_pair или levels
+            let readyLevels = [];
+            if (data.levels_by_pair) {
+                // Извлекаем все уровни из levels_by_pair, которые готовы И имеют успешный Screen 1
+                for (const pairLevels of Object.values(data.levels_by_pair)) {
+                    readyLevels.push(...pairLevels.filter(l => 
+                        l.ready_for_signal && getScreen1Status(l) === 'passed'
+                    ));
+                }
+            } else if (data.levels) {
+                readyLevels = data.levels.filter(l => 
+                    l.ready_for_signal && getScreen1Status(l) === 'passed'
+                );
+            }
+
+            // Сортируем по расстоянию (ближайшие первыми)
+            readyLevels.sort((a, b) => {
+                const distA = a.distance_pct !== null && a.distance_pct !== undefined ? a.distance_pct : 999.0;
+                const distB = b.distance_pct !== null && b.distance_pct !== undefined ? b.distance_pct : 999.0;
+                return distA - distB;
+            });
+
+            // Добавляем новые уведомления для готовых уровней с успешным Screen 1
+            readyLevels.forEach(level => {
+                const key = `${level.pair}-${level.price}`;
+                if (!lastNotifications.includes(key)) {
+                    // Добавляем расстояние до уровня в уведомление
+                    const distanceText = level.distance_pct !== undefined && level.distance_pct !== null 
+                        ? ` (расстояние: ${level.distance_pct.toFixed(2)}%)` 
+                        : '';
+                    newNotifications.push({
+                        type: 'ready',
+                        message: `✅ ${level.pair} @ $${level.price.toFixed(4)} готов к сигналу!${distanceText}`,
+                        key: key
+                    });
+                }
+            });
+
+            // Добавляем новые уведомления
+            newNotifications.forEach(notif => {
+                const div = document.createElement('div');
+                div.className = `notification ${notif.type}`;
+                div.textContent = notif.message;
+                notificationsList.insertBefore(div, notificationsList.firstChild);
+                lastNotifications.push(notif.key);
+            });
+
+            // Ограничиваем количество уведомлений
+            while (notificationsList.children.length > 10) {
+                notificationsList.removeChild(notificationsList.lastChild);
+            }
+        }
+
+        function renderLevelsByPair(levelsByPair) {
+            const container = document.getElementById('levels-list');
+            
+            const pairs = Object.keys(levelsByPair);
+            if (pairs.length === 0) {
+                container.innerHTML = '<div class="loading">Нет активных уровней</div>';
+                return;
+            }
+
+            // Сортируем пары: сначала те, где есть готовые уровни, затем остальные
+            // Внутри каждой группы сортируем по ближайшему расстоянию среди готовых уровней
+            const sortedPairs = Object.entries(levelsByPair).sort(([pairA, levelsA], [pairB, levelsB]) => {
+                // Проверяем, есть ли готовые уровни в каждой паре
+                const hasReadyA = levelsA.some(l => l.ready_for_signal === true);
+                const hasReadyB = levelsB.some(l => l.ready_for_signal === true);
+                
+                // Сначала пары с готовыми уровнями
+                if (hasReadyA !== hasReadyB) {
+                    return hasReadyB ? 1 : -1;
+                }
+                
+                // Если обе пары имеют или не имеют готовые уровни, сортируем по ближайшему расстоянию
+                // среди готовых уровней
+                const readyLevelsA = levelsA.filter(l => l.ready_for_signal === true);
+                const readyLevelsB = levelsB.filter(l => l.ready_for_signal === true);
+                
+                const distsA = readyLevelsA.map(l => l.distance_pct).filter(d => d !== null && d !== undefined);
+                const distsB = readyLevelsB.map(l => l.distance_pct).filter(d => d !== null && d !== undefined);
+                
+                const minDistA = distsA.length > 0 ? Math.min(...distsA) : 999.0;
+                const minDistB = distsB.length > 0 ? Math.min(...distsB) : 999.0;
+                
+                return minDistA - minDistB;
+            });
+
+            // Рендерим группы по парам с аккордеоном
+            container.innerHTML = sortedPairs.map(([pair, pairLevels]) => {
+                // Сортируем уровни внутри пары: сначала с успешным Screen 1, затем остальные
+                // Внутри каждой группы сортируем по distance_pct
+                const sortedLevels = [...pairLevels].sort((a, b) => {
+                    const screen1StatusA = getScreen1Status(a);
+                    const screen1StatusB = getScreen1Status(b);
+                    
+                    // Сначала уровни с успешным Screen 1
+                    if (screen1StatusA === 'passed' && screen1StatusB !== 'passed') {
+                        return -1;
+                    }
+                    if (screen1StatusA !== 'passed' && screen1StatusB === 'passed') {
+                        return 1;
+                    }
+                    
+                    // Если оба имеют одинаковый статус Screen 1, сортируем по distance_pct
+                    const distA = a.distance_pct !== null && a.distance_pct !== undefined ? a.distance_pct : 999.0;
+                    const distB = b.distance_pct !== null && b.distance_pct !== undefined ? b.distance_pct : 999.0;
+                    
+                    return distA - distB;
+                });
+
+                const hasReady = sortedLevels.some(l => l.ready_for_signal);
+                const readyCount = sortedLevels.filter(l => l.ready_for_signal).length;
+                const totalCount = sortedLevels.length;
+                
+                // Ближайший уровень только среди готовых (ready_for_signal === true)
+                const readyLevels = sortedLevels.filter(l => l.ready_for_signal === true);
+                const distances = readyLevels.map(l => l.distance_pct).filter(d => d !== null && d !== undefined);
+                const minDistance = distances.length > 0 ? Math.min(...distances) : 999.0;
+                
+                const isExpanded = expandedPairs.has(pair);
+
+                return `
+                    <div class="pair-group ${hasReady ? 'has-ready' : ''} ${isExpanded ? 'expanded' : ''}" data-pair="${pair}">
+                        <div class="pair-group-header" onclick="togglePairGroup('${pair}')">
+                            <div class="pair-group-header-content">
+                                <span class="pair-group-toggle">▶</span>
+                                <div class="pair-group-title">${pair}</div>
+                                <div class="pair-group-stats">
+                                    ${hasReady ? `<span style="color: var(--accent-success);">✅ Готовых: ${readyCount}</span>` : ''}
+                                    <span>Всего: ${totalCount}</span>
+                                    <span>Ближайший (готовый): ${minDistance !== 999.0 ? minDistance.toFixed(2) + '%' : 'N/A'}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="pair-group-levels">
+                            ${sortedLevels.map(level => renderLevelRow(level)).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Добавляем обработчики клика для раскрытия/сворачивания
+            attachPairGroupHandlers();
+        }
+        
+        window.togglePairGroup = function(pair) {
+            const group = document.querySelector(`.pair-group[data-pair="${pair}"]`);
+            if (group) {
+                group.classList.toggle('expanded');
+                if (group.classList.contains('expanded')) {
+                    expandedPairs.add(pair);
+                } else {
+                    expandedPairs.delete(pair);
+                }
+            }
+        };
+        
+        function attachPairGroupHandlers() {
+            // Обработчики уже добавлены через onclick в HTML
+        }
+
+        function renderLevels(levels) {
+            const container = document.getElementById('levels-list');
+            
+            if (levels.length === 0) {
+                container.innerHTML = '<div class="loading">Нет активных уровней</div>';
+                return;
+            }
+
+            // Группируем уровни по парам (fallback для старого формата API)
+            const levelsByPair = {};
+            for (const level of levels) {
+                const pair = level.pair || 'UNKNOWN';
+                if (!levelsByPair[pair]) {
+                    levelsByPair[pair] = [];
+                }
+                levelsByPair[pair].push(level);
+            }
+
+            // Сортируем пары: сначала те, где есть готовые уровни, затем остальные
+            // Внутри каждой группы сортируем по ближайшему расстоянию среди готовых уровней
+            const sortedPairs = Object.entries(levelsByPair).sort(([pairA, levelsA], [pairB, levelsB]) => {
+                // Проверяем, есть ли готовые уровни в каждой паре
+                const hasReadyA = levelsA.some(l => l.ready_for_signal === true);
+                const hasReadyB = levelsB.some(l => l.ready_for_signal === true);
+                
+                // Сначала пары с готовыми уровнями
+                if (hasReadyA !== hasReadyB) {
+                    return hasReadyB ? 1 : -1;
+                }
+                
+                // Если обе пары имеют или не имеют готовые уровни, сортируем по ближайшему расстоянию
+                // среди готовых уровней
+                const readyLevelsA = levelsA.filter(l => l.ready_for_signal === true);
+                const readyLevelsB = levelsB.filter(l => l.ready_for_signal === true);
+                
+                const distsA = readyLevelsA.map(l => l.distance_pct).filter(d => d !== null && d !== undefined);
+                const distsB = readyLevelsB.map(l => l.distance_pct).filter(d => d !== null && d !== undefined);
+                
+                const minDistA = distsA.length > 0 ? Math.min(...distsA) : 999.0;
+                const minDistB = distsB.length > 0 ? Math.min(...distsB) : 999.0;
+                
+                return minDistA - minDistB;
+            });
+
+            // Рендерим группы по парам с аккордеоном
+            container.innerHTML = sortedPairs.map(([pair, pairLevels]) => {
+                // Сортируем уровни внутри пары: сначала с успешным Screen 1, затем остальные
+                // Внутри каждой группы сортируем по distance_pct
+                const sortedLevels = [...pairLevels].sort((a, b) => {
+                    const screen1StatusA = getScreen1Status(a);
+                    const screen1StatusB = getScreen1Status(b);
+                    
+                    // Сначала уровни с успешным Screen 1
+                    if (screen1StatusA === 'passed' && screen1StatusB !== 'passed') {
+                        return -1;
+                    }
+                    if (screen1StatusA !== 'passed' && screen1StatusB === 'passed') {
+                        return 1;
+                    }
+                    
+                    // Если оба имеют одинаковый статус Screen 1, сортируем по distance_pct
+                    const distA = a.distance_pct !== null && a.distance_pct !== undefined ? a.distance_pct : 999.0;
+                    const distB = b.distance_pct !== null && b.distance_pct !== undefined ? b.distance_pct : 999.0;
+                    
+                    return distA - distB;
+                });
+
+                const hasReady = sortedLevels.some(l => l.ready_for_signal);
+                const readyCount = sortedLevels.filter(l => l.ready_for_signal).length;
+                const totalCount = sortedLevels.length;
+                
+                // Ближайший уровень только среди готовых (ready_for_signal === true)
+                const readyLevels = sortedLevels.filter(l => l.ready_for_signal === true);
+                const distances = readyLevels.map(l => l.distance_pct).filter(d => d !== null && d !== undefined);
+                const minDistance = distances.length > 0 ? Math.min(...distances) : 999.0;
+                
+                const isExpanded = expandedPairs.has(pair);
+
+                return `
+                    <div class="pair-group ${hasReady ? 'has-ready' : ''} ${isExpanded ? 'expanded' : ''}" data-pair="${pair}">
+                        <div class="pair-group-header" onclick="togglePairGroup('${pair}')">
+                            <div class="pair-group-header-content">
+                                <span class="pair-group-toggle">▶</span>
+                                <div class="pair-group-title">${pair}</div>
+                                <div class="pair-group-stats">
+                                    ${hasReady ? `<span style="color: var(--accent-success);">✅ Готовых: ${readyCount}</span>` : ''}
+                                    <span>Всего: ${totalCount}</span>
+                                    <span>Ближайший (готовый): ${minDistance !== 999.0 ? minDistance.toFixed(2) + '%' : 'N/A'}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="pair-group-levels">
+                            ${sortedLevels.map(level => renderLevelRow(level)).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Добавляем обработчики клика для раскрытия/сворачивания
+            attachPairGroupHandlers();
+        }
+        
+        function renderLevelRow(level) {
+            const elderScreens = level.elder_screens || {};
+            const screen1 = elderScreens.screen_1 || {};
+            const screen2 = elderScreens.screen_2 || {};
+            const finalDecision = elderScreens.final_decision || 'NOT_CHECKED';
+
+            let rowClass = 'level-row';
+            let statusIcon = '⏳';
+            let statusText = '';
+            
+            // Определяем статус более точно
+            if (level.ready_for_signal) {
+                rowClass += ' ready';
+                statusIcon = '✅';
+                statusText = 'ГОТОВ';
+            } else if (finalDecision === 'BLOCKED_SCREEN_1') {
+                rowClass += ' blocked';
+                statusIcon = '❌';
+                statusText = 'Экран 1';
+            } else if (finalDecision === 'BLOCKED_SCREEN_2') {
+                rowClass += ' blocked';
+                statusIcon = '❌';
+                statusText = 'Экран 2';
+            } else if (screen1.passed === true && screen2.passed === false) {
+                // Screen 1 пройден, но Screen 2 заблокирован
+                rowClass += ' blocked';
+                statusIcon = '⚠️';
+                statusText = 'Экран 2';
+            } else if (screen1.passed === true && (screen2.passed === null || screen2.passed === undefined)) {
+                // Screen 1 пройден, но Screen 2 еще не проверен
+                rowClass += ' not-checked';
+                statusIcon = '⏳';
+                statusText = 'Проверка...';
+            } else if (screen1.passed === false) {
+                // Screen 1 заблокирован
+                rowClass += ' blocked';
+                statusIcon = '❌';
+                statusText = 'Экран 1';
+            } else {
+                // Не проверено
+                rowClass += ' not-checked';
+                statusIcon = '⏳';
+                statusText = 'Проверка...';
+            }
+
+            const signalType = level.level_type === 'support' ? 'LONG' : 'SHORT';
+            const screen1Status = screen1.passed === true ? 'passed' : (screen1.passed === false ? 'blocked' : 'not-checked');
+            const screen2Status = screen2.passed === true ? 'passed' : (screen2.passed === false ? 'blocked' : 'not-checked');
+            
+            // Компактная информация
+            const screen1Icon = screen1.passed === true ? '✅' : (screen1.passed === false ? '❌' : '⏳');
+            const screen2Icon = screen2.passed === true ? '✅' : (screen2.passed === false ? '❌' : '⏳');
+            
+            // Полный текст причины блокировки (без обрезки)
+            const screen1Reason = screen1.blocked_reason || '';
+            const screen2Reason = screen2.blocked_reason || '';
+            
+            // Формируем информативный текст о статусе
+            let statusDetails = '';
+            if (screen1.passed === true && screen2.passed === false) {
+                statusDetails = screen2Reason || 'Экран 2 заблокирован';
+            } else if (screen1.passed === true && (screen2.passed === null || screen2.passed === undefined)) {
+                statusDetails = 'Экран 1 пройден, проверка Экран 2...';
+            } else if (screen1.passed === false) {
+                statusDetails = screen1Reason || 'Экран 1 заблокирован';
+            } else if ((screen1.passed === null || screen1.passed === undefined) && (screen2.passed === null || screen2.passed === undefined)) {
+                // Оба экрана не проверены
+                statusDetails = '⏳ Проверка Elder\'s Screens не выполнена. Сигнал не будет сгенерирован до прохождения проверок.';
+            } else {
+                statusDetails = screen1Reason || screen2Reason || '';
+            }
+
+            return `
+                <div class="${rowClass}">
+                    <div class="level-status-icon" title="${statusText}">${statusIcon}</div>
+                    <div class="level-info">
+                        <div class="level-info-main">
+                            <span class="level-price">$${level.price.toFixed(4)}</span>
+                            <span class="badge">${signalType}</span>
+                            <span class="badge">${level.timeframe || 'N/A'}</span>
+                            ${level.ready_for_signal ? '<span class="badge ready">ГОТОВ</span>' : ''}
+                        </div>
+                        <div class="level-info-details">
+                            ${statusDetails}
+                        </div>
+                    </div>
+                    <div class="level-signal-info" style="display: flex; gap: 0.25rem; align-items: center; font-size: 0.7rem;">
+                        ${level.signal_created && level.signal_timestamp ? (() => {
+                            try {
+                                const signalDate = new Date(level.signal_timestamp);
+                                const moscowDate = new Date(signalDate.toLocaleString('en-US', {timeZone: 'Europe/Moscow'}));
+                                const hours = moscowDate.getHours().toString().padStart(2, '0');
+                                const minutes = moscowDate.getMinutes().toString().padStart(2, '0');
+                                const day = moscowDate.getDate().toString().padStart(2, '0');
+                                const month = (moscowDate.getMonth() + 1).toString().padStart(2, '0');
+                                const fullTime = `${day}.${month} ${hours}:${minutes}`;
+                                return `
+                                    <span class="badge" style="background: rgba(0, 255, 255, 0.2); border-color: #00ffff; white-space: nowrap;" 
+                                          title="Сигнал создан: ${fullTime} МСК${level.signal_status ? ', статус: ' + level.signal_status : ''}">
+                                        📤 ${hours}:${minutes}
+                                    </span>
+                                    ${level.signal_id ? `<span class="badge" style="background: rgba(255, 170, 0, 0.2); border-color: #ffaa00; white-space: nowrap;" title="ID сигнала: ${level.signal_id}">ID: ${level.signal_id}</span>` : ''}
+                                `;
+                            } catch (e) {
+                                return '';
+                            }
+                        })() : ''}
+                    </div>
+                    <div class="level-screens-status">
+                        <span class="screen-indicator ${screen1Status}" title="Экран 1: 4H Тренд${screen1.passed === true ? ' ✅ ПРОЙДЕН' : screen1.passed === false ? ' ❌ ЗАБЛОКИРОВАН' : ' ⏳ НЕ ПРОВЕРЕНО'}${screen1Reason ? ': ' + screen1Reason : ''}">1${screen1Icon}</span>
+                        <span class="screen-indicator ${screen2Status}" title="Экран 2: 1H Анализ${screen2.passed === true ? ' ✅ ПРОЙДЕН' : screen2.passed === false ? ' ❌ ЗАБЛОКИРОВАН' : ' ⏳ НЕ ПРОВЕРЕНО'}${screen2Reason ? ': ' + screen2Reason : ''}">2${screen2Icon}</span>
+                    </div>
+                    <div class="level-distance">${level.distance_pct !== undefined && level.distance_pct !== null ? level.distance_pct.toFixed(2) + '%' : 'N/A'}</div>
+                    <div class="level-badges">
+                        <span class="badge">Score: ${(level.score || 0).toFixed(1)}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+
+        // Автообновление каждые 60 секунд (1 минута)
+        const UPDATE_INTERVAL = 60000; // 60 секунд
+        let updateIntervalId = null;
+        
+        // Функция для запуска автообновления
+        function startAutoUpdate() {
+            if (updateIntervalId) {
+                clearInterval(updateIntervalId);
+            }
+            updateIntervalId = setInterval(() => {
+                // Обновляем всегда, независимо от видимости страницы
+                // (данные обновляются на бэкенде независимо от фронтенда)
+                console.log('🔄 Автоматический вызов loadData()...');
+                loadData(true).catch(err => {
+                    console.error('❌ Ошибка при автоматической загрузке:', err);
+                });
+            }, UPDATE_INTERVAL);
+        }
+
+        // Обработчик видимости страницы (Page Visibility API)
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                console.log('👁️ Страница скрыта, приостанавливаем автообновление');
+            } else {
+                console.log('👁️ Страница видима, возобновляем автообновление');
+                // При возврате на страницу проверяем, нужно ли обновить данные
+                const cachedData = getCachedData();
+                if (!cachedData) {
+                    // Нет кэша, загружаем данные
+                    loadData(true).catch(err => {
+                        console.error('❌ Ошибка при загрузке после возврата:', err);
+                    });
+                } else {
+                    // Есть кэш, отображаем его и проверяем актуальность
+                    const cachedTimestamp = parseInt(sessionStorage.getItem(CACHE_TIMESTAMP_KEY), 10);
+                    const age = Date.now() - cachedTimestamp;
+                    if (age > CACHE_TTL) {
+                        // Кэш устарел, обновляем
+                        console.log('🔄 Кэш устарел после возврата, обновляем данные');
+                        loadData(true).catch(err => {
+                            console.error('❌ Ошибка при обновлении после возврата:', err);
+                        });
+                    } else {
+                        // Кэш актуален, просто отображаем
+                        console.log('✅ Кэш актуален, отображаем данные');
+                        displayData(cachedData);
+                    }
+                }
+                startAutoUpdate();
+            }
+        });
+
+        console.log(`📅 Настройка автообновления: каждые ${UPDATE_INTERVAL / 1000} секунд`);
+        console.log('🔄 Вызов loadData() при загрузке страницы...');
+        loadData().catch(err => {
+            console.error('❌ Критическая ошибка при первой загрузке:', err);
+        });
+        startAutoUpdate();
+        console.log('✅ Страница инициализирована');
+
+        // ============================================================================
+        // ФУНКЦИИ ДЛЯ ПЕРЕКЛЮЧЕНИЯ ТЕМ И LIVE-ТОРГОВЛИ
+        // ============================================================================
+
+        let liveTradingEnabled = true;
+        const serverPort = window.location.port || '8000';
+        const baseUrlForTrading = `http://localhost:${serverPort}`;
+
+        function updateLiveTradingToggleButton() {
+            const btn = document.getElementById('live-trading-toggle');
+            if (!btn) return;
+            btn.classList.toggle('live-on', liveTradingEnabled);
+            btn.classList.toggle('live-off', !liveTradingEnabled);
+            btn.textContent = liveTradingEnabled ? 'LIVE: ВКЛ' : 'LIVE: ВЫКЛ';
+        }
+
+        async function fetchLiveTradingStatus() {
+            try {
+                const response = await fetch(`${baseUrlForTrading}/api/trading/live/status`);
+                const data = await response.json();
+                if (typeof data.enabled === 'boolean') {
+                    liveTradingEnabled = data.enabled;
+                    updateLiveTradingToggleButton();
+                }
+            } catch (error) {
+                console.warn('Не удалось получить статус live-торговли:', error);
+            }
+        }
+
+        async function toggleLiveTrading(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            try {
+                const response = await fetch(`${baseUrlForTrading}/api/trading/live/status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled: !liveTradingEnabled })
+                });
+                const data = await response.json();
+                if (typeof data.enabled === 'boolean') {
+                    liveTradingEnabled = data.enabled;
+                    updateLiveTradingToggleButton();
+                }
+            } catch (error) {
+                console.error('Не удалось переключить live-режим:', error);
+            }
+        }
+
+        // Система переключения стилей
+        function toggleDesignMenu() {
+            const menu = document.getElementById('design-menu');
+            const dropdown = document.querySelector('.design-dropdown');
+            const isActive = menu.classList.contains('active');
+            const isCosmic = document.body.classList.contains('theme-cosmic');
+            
+            if (!isActive && dropdown) {
+                if (isCosmic) {
+                    // Для космической темы перемещаем меню в конец body, чтобы избежать обрезания
+                    const menuClone = menu.cloneNode(true);
+                    menuClone.id = 'design-menu-cosmic';
+                    menuClone.classList.add('cosmic-menu-portal');
+                    document.body.appendChild(menuClone);
+                    
+                    // Вычисляем позицию
+                    const rect = dropdown.getBoundingClientRect();
+                    menuClone.style.position = 'fixed';
+                    menuClone.style.top = (rect.bottom + 8) + 'px';
+                    menuClone.style.right = (window.innerWidth - rect.right) + 'px';
+                    menuClone.style.left = 'auto';
+                    menuClone.style.bottom = 'auto';
+                    menuClone.style.zIndex = '99999';
+                    menuClone.style.display = 'block';
+                    
+                    // Обновляем обработчики событий для клонированного меню
+                    menuClone.querySelectorAll('.design-option').forEach(option => {
+                        option.onclick = function() {
+                            const theme = this.dataset.theme;
+                            switchTheme(theme);
+                            // Удаляем клонированное меню
+                            menuClone.remove();
+                            menu.classList.remove('active');
+                        };
+                    });
+                    
+                    // Скрываем оригинальное меню
+                    menu.style.display = 'none';
+                } else {
+                    // Для других тем сбрасываем стили
+                    menu.style.position = '';
+                    menu.style.top = '';
+                    menu.style.right = '';
+                    menu.style.left = '';
+                    menu.style.bottom = '';
+                    menu.style.display = '';
+                }
+            } else if (isActive && isCosmic) {
+                // Закрываем меню в космической теме
+                const cosmicMenu = document.getElementById('design-menu-cosmic');
+                if (cosmicMenu) {
+                    cosmicMenu.remove();
+                }
+                menu.style.display = '';
+            }
+            
+            menu.classList.toggle('active');
+        }
+
+        // Закрытие меню при клике вне его
+        document.addEventListener('click', function(event) {
+            const dropdown = document.querySelector('.design-dropdown');
+            const menu = document.getElementById('design-menu');
+            const cosmicMenu = document.getElementById('design-menu-cosmic');
+            const isCosmic = document.body.classList.contains('theme-cosmic');
+            
+            if (isCosmic && cosmicMenu && !cosmicMenu.contains(event.target) && !dropdown.contains(event.target)) {
+                cosmicMenu.remove();
+                menu.classList.remove('active');
+                menu.style.display = '';
+            } else if (!isCosmic && dropdown && !dropdown.contains(event.target)) {
+                menu.classList.remove('active');
+            }
+        });
+
+        // Обновление позиции меню при скролле для космической темы
+        document.addEventListener('scroll', function() {
+            const cosmicMenu = document.getElementById('design-menu-cosmic');
+            const dropdown = document.querySelector('.design-dropdown');
+            
+            if (cosmicMenu && dropdown) {
+                const rect = dropdown.getBoundingClientRect();
+                cosmicMenu.style.top = (rect.bottom + 8) + 'px';
+                cosmicMenu.style.right = (window.innerWidth - rect.right) + 'px';
+            }
+        }, true);
+
+        function switchTheme(themeName) {
+            // Сохраняем выбор
+            localStorage.setItem('selectedTheme', themeName);
+            
+            // Применяем тему
+            document.body.className = `theme-${themeName}`;
+            
+            // Обновляем активный пункт меню
+            document.querySelectorAll('.design-option').forEach(option => {
+                option.classList.remove('active');
+                if (option.dataset.theme === themeName) {
+                    option.classList.add('active');
+                }
+            });
+            
+            // Обновляем логотип в зависимости от темы
+            updateLogo(themeName);
+            
+            // Закрываем меню
+            document.getElementById('design-menu').classList.remove('active');
+        }
+
+        function updateLogo(themeName) {
+            const logoSvg = document.querySelector('.logo svg');
+            if (!logoSvg) return;
+
+            if (themeName === 'classic') {
+                // Классический: фиолетово-синий градиент
+                logoSvg.innerHTML = `
+                    <defs>
+                        <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                            <stop offset="50%" style="stop-color:#764ba2;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="30" fill="none" stroke="url(#logoGradient)" stroke-width="3"/>
+                    <circle cx="50" cy="50" r="20" fill="none" stroke="url(#logoGradient)" stroke-width="2"/>
+                    <circle cx="50" cy="50" r="8" fill="url(#logoGradient)"/>
+                `;
+            } else if (themeName === 'cosmic') {
+                // Космический: фиолетовый + золотой
+                logoSvg.innerHTML = `
+                    <defs>
+                        <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#6c5ce7;stop-opacity:1" />
+                            <stop offset="50%" style="stop-color:#a29bfe;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#fdcb6e;stop-opacity:1" />
+                        </linearGradient>
+                        <filter id="glow">
+                            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                            <feMerge>
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                    </defs>
+                    <circle cx="50" cy="50" r="35" fill="none" stroke="url(#logoGradient)" stroke-width="2" filter="url(#glow)" opacity="0.6"/>
+                    <polygon points="50,15 55,40 80,40 60,55 65,80 50,65 35,80 40,55 20,40 45,40" fill="url(#logoGradient)" filter="url(#glow)"/>
+                    <circle cx="50" cy="50" r="5" fill="url(#logoGradient)" filter="url(#glow)"/>
+                `;
+            } else {
+                // Cyberpunk: зеленый + розовый (текущий)
+                logoSvg.innerHTML = `
+                    <defs>
+                        <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#00ff41;stop-opacity:1" />
+                            <stop offset="50%" style="stop-color:#00cc33;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#ff006e;stop-opacity:1" />
+                        </linearGradient>
+                        <filter id="glow">
+                            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                            <feMerge>
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                    </defs>
+                    <rect x="20" y="20" width="60" height="60" fill="none" stroke="url(#logoGradient)" stroke-width="3" filter="url(#glow)"/>
+                    <rect x="30" y="30" width="40" height="40" fill="none" stroke="url(#logoGradient)" stroke-width="2" filter="url(#glow)"/>
+                    <line x1="20" y1="50" x2="30" y2="50" stroke="url(#logoGradient)" stroke-width="2" filter="url(#glow)"/>
+                    <line x1="70" y1="50" x2="80" y2="50" stroke="url(#logoGradient)" stroke-width="2" filter="url(#glow)"/>
+                    <line x1="50" y1="20" x2="50" y2="30" stroke="url(#logoGradient)" stroke-width="2" filter="url(#glow)"/>
+                    <line x1="50" y1="70" x2="50" y2="80" stroke="url(#logoGradient)" stroke-width="2" filter="url(#glow)"/>
+                    <circle cx="50" cy="50" r="5" fill="url(#logoGradient)" filter="url(#glow)"/>
+                    <path d="M25 25 L35 35 M65 25 L75 35 M25 75 L35 65 M65 75 L75 65" stroke="url(#logoGradient)" stroke-width="1.5" opacity="0.7" filter="url(#glow)"/>
+                `;
+            }
+        }
+
+        // Загрузка сохраненной темы при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('selectedTheme') || 'cyberpunk';
+            // Применяем тему без перезагрузки
+            document.body.className = `theme-${savedTheme}`;
+            updateLogo(savedTheme);
+            
+            // Обновляем активный пункт меню дизайна
+            document.querySelectorAll('.design-option').forEach(option => {
+                option.classList.remove('active');
+                if (option.dataset.theme === savedTheme) {
+                    option.classList.add('active');
+                }
+            });
+            
+            // Отмечаем активную навигацию
+            const currentPath = window.location.pathname;
+            if (currentPath.includes('/demo-trading')) {
+                document.getElementById('nav-demo')?.classList.add('active');
+            } else if (currentPath.includes('/signals')) {
+                document.getElementById('nav-signals')?.classList.add('active');
+            } else if (currentPath.includes('/potential-signals')) {
+                document.getElementById('nav-potential')?.classList.add('active');
+            } else {
+                document.getElementById('nav-dashboard')?.classList.add('active');
+            }
+
+            // Загружаем статус live-торговли
+            fetchLiveTradingStatus();
+        });
+    </script>
+</body>
+</html>
+
